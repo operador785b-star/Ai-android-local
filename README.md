@@ -1,6 +1,6 @@
 # IA Local Android
 
-Aplicación Android de chat en español con inferencia de texto en el teléfono. La versión 0.1.0 está diseñada para el Redmi Note 14 Pro 4G con 8 GB de RAM. Usa Kotlin, Jetpack Compose, SQLite y llama.cpp sobre CPU ARM64.
+Es una app para usar modelos de Ia localmente. La versión 0.1.0 ofrece chat en español y está diseñada para el Redmi Note 14 Pro 4G con 8 GB de RAM. Usa Kotlin, Jetpack Compose, SQLite y llama.cpp sobre CPU ARM64.
 
 ## Instalar desde el celular
 
