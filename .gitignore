@@ -1,0 +1,13 @@
+.gradle/
+.kotlin/
+.idea/
+**/build/
+**/.cxx/
+local.properties
+vendor/llama.cpp/
+*.gguf
+*.jks
+*.keystore
+.venv/
+__pycache__/
+training/runs/
