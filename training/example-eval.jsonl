@@ -1,0 +1,4 @@
+{"id":"division","task":"matematicas","instruction":"Responde solo con el número: ¿cuánto es 81 dividido entre 9?","kind":"exact","expected":"9"}
+{"id":"python","task":"codigo","instruction":"Escribe en Python una función llamada triple(x) que devuelva tres veces x.","kind":"contains","expected":"def triple("}
+{"id":"deduccion","task":"razonamiento","instruction":"Ningún círculo es un cuadrado. A es un círculo. ¿Es A un cuadrado? Responde solo Sí o No, sin puntuación.","kind":"exact","expected":"No"}
+{"id":"saludo","task":"conversacion","instruction":"Redacta un saludo de cumpleaños que incluya la frase feliz cumpleaños.","kind":"contains","expected":"feliz cumpleaños"}

@@ -14,9 +14,9 @@ data class InstalledModel(val name: String, val sha256: String, val file: File)
 object ModelCatalog {
     val recommended = CatalogModel(
         name = "Qwen3.5-2B · Q4_K_M",
-        bytes = 1_312_164_352L,
-        sha256 = "9a3d0aa6c920f096441139b6a254542da855223fdad06855ea00c6c087fd713d",
-        url = "https://huggingface.co/gguf/Qwen3.5-2B-GGUF/resolve/" +
-            "47f5192dcee31b32db0ba0acc04cccef89cb4b2c/qwen3.5-2b-Q4_K_M.gguf"
+        bytes = 1_280_835_840L,
+        sha256 = "aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223",
+        url = "https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/" +
+            "f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf"
     )
 }

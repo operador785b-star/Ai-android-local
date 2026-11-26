@@ -5,9 +5,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -26,8 +29,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import com.ialocal.android.R
 import com.ialocal.android.chat.ChatUiState
 import com.ialocal.android.inference.InferenceSettings
 import com.ialocal.android.model.InstalledModel
@@ -59,7 +64,7 @@ internal fun ModelScreen(
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(recommended.name, style = MaterialTheme.typography.titleLarge)
-                    Text("Conversación en CPU · 4 bits · 1,31 GB",
+                    Text("Conversación en CPU · 4 bits · ${fileSize(recommended.bytes)}",
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Se verifica el SHA-256 antes de usarlo.")
                     Button(onClick = onDownload, enabled = canChange) { Text("Descargar Qwen3.5-2B") }
@@ -163,6 +168,7 @@ internal fun SettingsScreen(
     onModels: () -> Unit
 ) {
     val settings = state.settings
+    var license by rememberSaveable { mutableStateOf<Int?>(null) }
     val enabled = !state.loading && !state.generating
     LazyColumn(
         modifier = modifier,
@@ -209,6 +215,23 @@ internal fun SettingsScreen(
                 TextButton(onClick = onModels) { Text("Administrar") }
             }
         }
+        item {
+            Text("Licencias", style = MaterialTheme.typography.titleMedium)
+            TextButton(onClick = { license = R.raw.llama_license }) { Text("llama.cpp · MIT") }
+            TextButton(onClick = { license = R.raw.qwen_license }) { Text("Qwen3.5 · Apache 2.0") }
+        }
+    }
+    license?.let { resource ->
+        val resources = LocalContext.current.resources
+        val text = remember(resource) { resources.openRawResource(resource).bufferedReader().use { it.readText() } }
+        AlertDialog(
+            onDismissRequest = { license = null },
+            title = { Text("Licencia") },
+            text = {
+                Text(text, Modifier.heightIn(max = 300.dp).verticalScroll(rememberScrollState()))
+            },
+            confirmButton = { TextButton(onClick = { license = null }) { Text("Cerrar") } }
+        )
     }
 }
 

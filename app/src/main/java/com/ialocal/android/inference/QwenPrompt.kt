@@ -4,7 +4,7 @@ internal object QwenPrompt {
     private const val system = "Eres IA Local, un asistente útil. Responde en el idioma del usuario " +
         "salvo que indique lo contrario. Si escribes código, usa bloques Markdown con lenguaje. " +
         "Si falta información, dilo con claridad."
-    private val controlToken = Regex("<\\|[^|<>\\n]{1,80}\\|>")
+    private val controlToken = Regex("<\\|[^|<>\\n]{1,80}\\|>|</?think>")
     private const val MAX_HISTORY_CHARS = 24_000
 
     // Candidates go from most context to least. Native tokenization picks the first one that fits.

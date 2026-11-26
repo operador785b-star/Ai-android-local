@@ -1,0 +1,4 @@
+{"task":"codigo","instruction":"Explica qué hace xs.map { it * 2 } en Kotlin. Usa una frase y un ejemplo.","response":"Devuelve una lista nueva donde cada elemento de xs se multiplica por dos. Por ejemplo, listOf(1, 3).map { it * 2 } produce [2, 6]."}
+{"task":"matematicas","instruction":"Resuelve x + 7 = 11 e indica la operación usada.","response":"Resta 7 de ambos lados: x = 11 − 7 = 4."}
+{"task":"razonamiento","instruction":"Si todas las entradas válidas llevan sello y esta entrada no tiene sello, ¿puede ser válida?","response":"No. Si fuera válida, necesariamente tendría sello. Al faltar el sello, no cumple la condición."}
+{"task":"conversacion","instruction":"Escribe una frase breve para agradecer ayuda con un trabajo.","response":"Gracias por ayudarme con el trabajo. Tu apoyo me permitió terminarlo a tiempo."}

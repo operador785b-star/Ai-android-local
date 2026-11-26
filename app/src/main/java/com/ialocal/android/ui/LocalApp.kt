@@ -46,6 +46,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,7 +65,10 @@ private enum class Screen { CHAT, MODELS, SETTINGS }
 fun LocalApp(vm: ChatViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
     var screen by rememberSaveable { mutableStateOf(Screen.CHAT) }
-    if (screen != Screen.CHAT) BackHandler { screen = Screen.CHAT }
+    var modelParent by rememberSaveable { mutableStateOf(Screen.CHAT) }
+    val back = { screen = if (screen == Screen.MODELS) modelParent else Screen.CHAT }
+    if (screen != Screen.CHAT) BackHandler(onBack = back)
+    val stateHolder = rememberSaveableStateHolder()
 
     val drawer = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -131,8 +135,9 @@ fun LocalApp(vm: ChatViewModel) {
                                 Icon(Icons.Default.Menu, contentDescription = "Historial")
                             }
                         } else {
-                            IconButton(onClick = { screen = Screen.CHAT }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver al chat")
+                            IconButton(onClick = back) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = if (screen == Screen.MODELS && modelParent == Screen.SETTINGS)
+                                        "Volver a ajustes" else "Volver al chat")
                             }
                         }
                     },
@@ -154,11 +159,11 @@ fun LocalApp(vm: ChatViewModel) {
         ) { inset ->
             val content = Modifier.fillMaxSize().padding(inset)
             when (screen) {
-                Screen.CHAT -> {
+                Screen.CHAT -> stateHolder.SaveableStateProvider(Screen.CHAT.name) {
                     val live by vm.live.collectAsStateWithLifecycle()
                     ChatScreen(
                         state, live, content,
-                        onModels = { screen = Screen.MODELS },
+                        onModels = { modelParent = screen; screen = Screen.MODELS },
                         onSend = vm::send,
                         onStop = vm::stopGeneration
                     )
@@ -178,7 +183,7 @@ fun LocalApp(vm: ChatViewModel) {
                 Screen.SETTINGS -> SettingsScreen(
                     state, content,
                     onConfigure = vm::configure,
-                    onModels = { screen = Screen.MODELS }
+                    onModels = { modelParent = screen; screen = Screen.MODELS }
                 )
             }
         }
