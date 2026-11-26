@@ -23,10 +23,24 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Instalar SDK y NDK
         run: |
+          set -euo pipefail
+          export ANDROID_HOME="$RUNNER_TEMP/ia-local-android-sdk"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          printf 'ANDROID_HOME=%s\nANDROID_SDK_ROOT=%s\n' "$ANDROID_HOME" "$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          archive="$RUNNER_TEMP/android-commandline-tools.zip"
+          curl --fail --location --silent --show-error --retry 3 \
+            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
+            -o "$archive"
+          printf '%s  %s\n' 2d2d50857e4eb553af5a6dc3ad507a17adf43d115264b1afc116f95c92e5e258 "$archive" | sha256sum --check
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          unzip -q "$archive" -d "$ANDROID_HOME/cmdline-tools"
+          mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/12.0"
+          sdkmanager="$ANDROID_HOME/cmdline-tools/12.0/bin/sdkmanager"
           set +o pipefail
-          yes | sdkmanager --licenses >/dev/null
+          yes | "$sdkmanager" --sdk_root="$ANDROID_HOME" --licenses >/dev/null
           set -o pipefail
-          sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
+          "$sdkmanager" --sdk_root="$ANDROID_HOME" \
+            'platforms;android-35' 'build-tools;35.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
       - name: Preparar llama.cpp
         run: scripts/fetch-llama.sh
       - name: Probar y compilar
