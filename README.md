@@ -1,6 +1,6 @@
 # IA Local Android
 
-Es una app para usar modelos de Ia localmente. La versión 0.1.0 ofrece chat en español y está diseñada para el Redmi Note 14 Pro 4G con 8 GB de RAM. Usa Kotlin, Jetpack Compose, SQLite y llama.cpp sobre CPU ARM64.
+Es una app para usar modelos de Ia localmente. La versión 0.2.0 ofrece chat en español con una interfaz de cristal violeta y azul y está diseñada para el Redmi Note 14 Pro 4G con 8 GB de RAM. Usa Kotlin, Jetpack Compose, SQLite y llama.cpp sobre CPU ARM64.
 
 ## Instalar desde el celular
 
@@ -10,10 +10,12 @@ Es una app para usar modelos de Ia localmente. La versión 0.1.0 ofrece chat en 
 4. Vuelve al chat. Activa modo avión y comprueba que la Wi-Fi también esté apagada. Escribe «¿Cuánto es 6 × 7?» y luego «Escribe una función Python que devuelva el doble de un número».
 5. Cierra y vuelve a abrir la aplicación. Abre **Historial** para comprobar que la conversación siga disponible.
 
-El APK de GitHub Actions se firma para pruebas. Dos compilaciones generadas en entornos limpios pueden tener firmas distintas y Android puede rechazar la actualización. Desinstalar borra el historial y los modelos. Para cambiar un modelo usa **Modelos locales** dentro de la aplicación.
+El APK estándar mantiene el identificador `com.ialocal.android` y el historial de SQLite. Android exige la misma firma para actualizar una instalación existente. Si ya tienes la 0.1.0, descarga **IA-Local-Android-vista-previa-ARM64**. Su APK se instala junto a tu app y utiliza un espacio independiente. Puedes probar el rediseño conservando intacta tu instalación anterior. Para instalar por primera vez usa el APK estándar.
 
 ## Uso
 
+- En **Ajustes → Apariencia** puedes elegir tema claro, oscuro o del sistema y reducir animaciones.
+- **Historial** incluye un buscador por título que admite palabras sin tilde.
 - El botón junto al mensaje cambia a **Detener** mientras se genera la respuesta. El historial conserva la parte ya recibida.
 - Los bloques de código tienen desplazamiento horizontal y un botón para copiar. La aplicación muestra el código como texto.
 - **Ajustes → Memoria y contexto** controla el contexto, el máximo de salida y los hilos. La configuración inicial es 2.048 tokens de contexto, hasta 512 de respuesta y cuatro hilos.
@@ -27,11 +29,12 @@ Para compilar en Linux, usa JDK 17, SDK Android 35, Build Tools 35.0.0, NDK 28.2
 ```bash
 sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
 scripts/fetch-llama.sh
-./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest
+./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleVisualPreview :app:assembleDebugAndroidTest
 ```
 
-El APK se genera en `app/build/outputs/apk/debug/app-debug.apk`. Con un Android ARM64 conectado a ADB, ejecuta `./gradlew :app:connectedDebugAndroidTest` para las pruebas instrumentadas. El flujo de GitHub Actions guarda el APK firmado, su SHA-256 y los informes de compilación.
+El APK se genera en `app/build/outputs/apk/debug/app-debug.apk`. Con un Android ARM64 conectado a ADB, ejecuta `./gradlew :app:connectedDebugAndroidTest` para las pruebas instrumentadas. El flujo de GitHub Actions guarda ambos APK firmados, sus SHA-256, las capturas de Compose y los informes.
 
+- [Rediseño y capturas](docs/diseno-liquid-glass.md)
 - [Arquitectura y licencias](docs/arquitectura.md)
 - [Verificación y pruebas en el Redmi](docs/verificacion.md)
 - [Personalización con LoRA o QLoRA](training/README.md)
