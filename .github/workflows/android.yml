@@ -44,7 +44,7 @@ jobs:
       - name: Preparar llama.cpp
         run: scripts/fetch-llama.sh
       - name: Probar y compilar
-        run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest
+        run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleVisualPreview :app:assembleDebugAndroidTest
       - name: Verificar y preparar APK instalable
         run: |
           mkdir -p dist
@@ -55,6 +55,22 @@ jobs:
         with:
           name: IA-Local-Android-ARM64
           path: dist/
+          if-no-files-found: error
+      - name: Preparar APK de vista previa
+        run: |
+          mkdir -p preview-dist
+          cp app/build/outputs/apk/visualPreview/app-visualPreview.apk preview-dist/IA-Local-Android-vista-previa.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose preview-dist/IA-Local-Android-vista-previa.apk
+          (cd preview-dist && sha256sum IA-Local-Android-vista-previa.apk > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IA-Local-Android-vista-previa-ARM64
+          path: preview-dist/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Capturas-Liquid-Glass
+          path: app/build/previews/
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()

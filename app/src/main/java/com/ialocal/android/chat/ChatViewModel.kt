@@ -34,6 +34,7 @@ data class ChatUiState(
     val models: List<InstalledModel> = emptyList(),
     val activeModel: InstalledModel? = null,
     val settings: InferenceSettings = InferenceSettings(),
+    val appearance: AppearanceSettings = AppearanceSettings(),
     val loading: Boolean = true,
     val generating: Boolean = false,
     val stopping: Boolean = false,
@@ -46,7 +47,13 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     private val models = ModelStore(app)
     private val engine = LlamaEngine()
     private val prefs = app.getSharedPreferences("preferences", Application.MODE_PRIVATE)
-    private val _state = MutableStateFlow(ChatUiState())
+    private val _state = MutableStateFlow(ChatUiState(
+        appearance = AppearanceSettings(
+            mode = AppearanceMode.entries.firstOrNull { it.name == prefs.getString("appearance", null) }
+                ?: AppearanceMode.SYSTEM,
+            reduceMotion = prefs.getBoolean("reduce_motion", false)
+        )
+    ))
     val state = _state.asStateFlow()
     private val _live = MutableStateFlow<LiveAnswer?>(null)
     val live = _live.asStateFlow()
@@ -252,6 +259,12 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(settings = value) }
         prefs.edit().putInt("context", value.contextTokens)
             .putInt("output", value.outputTokens).putInt("threads", value.threads).apply()
+    }
+
+    fun configureAppearance(value: AppearanceSettings) {
+        prefs.edit().putString("appearance", value.mode.name)
+            .putBoolean("reduce_motion", value.reduceMotion).apply()
+        _state.update { it.copy(appearance = value) }
     }
 
     fun notice(text: String) { _state.update { it.copy(notice = text) } }
