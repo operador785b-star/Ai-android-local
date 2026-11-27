@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.ialocal.android.inference.GenerationEnd
 import com.ialocal.android.inference.GenerationRequest
 import com.ialocal.android.inference.InferenceException
+import com.ialocal.android.inference.InferenceJournal
+import com.ialocal.android.inference.InferenceMetrics
 import com.ialocal.android.inference.InferenceSettings
 import com.ialocal.android.inference.LlamaEngine
 import com.ialocal.android.model.InstalledModel
@@ -34,6 +36,7 @@ data class ChatUiState(
     val models: List<InstalledModel> = emptyList(),
     val activeModel: InstalledModel? = null,
     val settings: InferenceSettings = InferenceSettings(),
+    val diagnostics: String = "",
     val appearance: AppearanceSettings = AppearanceSettings(),
     val loading: Boolean = true,
     val generating: Boolean = false,
@@ -46,6 +49,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     private val chats = ChatStore(app)
     private val models = ModelStore(app)
     private val engine = LlamaEngine()
+    private val journal = InferenceJournal(app)
     private val prefs = app.getSharedPreferences("preferences", Application.MODE_PRIVATE)
     private val _state = MutableStateFlow(ChatUiState(
         appearance = AppearanceSettings(
@@ -65,6 +69,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 withContext(Dispatchers.IO) {
                     chats.recoverInterrupted()
+                    journal.recover()
+                    _state.update { it.copy(diagnostics = journal.report()) }
                     models.discardPartialFiles()
                 }
                 val saved = prefs.getLong("chat", 0L).takeIf { it > 0 }
@@ -100,6 +106,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             var turn: Turn? = null
             val body = StringBuilder()
             var end = MessageState.ERROR
+            var runId: Long? = null
+            var metrics: InferenceMetrics? = null
             try {
                 withContext(NonCancellable) {
                     turn = withContext(Dispatchers.IO) { chats.beginTurn(snapshot.selectedChat, text) }
@@ -110,8 +118,12 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 val history = withContext(Dispatchers.IO) { chats.history(currentTurn) }
                 var lastPaint = 0L
                 var lastSave = SystemClock.elapsedRealtime()
+                withContext(NonCancellable + Dispatchers.IO) {
+                    runId = journal.start(model.name, snapshot.settings)
+                }
                 val result = engine.generate(
-                    GenerationRequest(model.file, history, text, snapshot.settings, profile)
+                    GenerationRequest(model.file, history, text, snapshot.settings, profile),
+                    onMetrics = { metrics = it }
                 ) { fragment ->
                     body.append(fragment)
                     val now = SystemClock.elapsedRealtime()
@@ -142,6 +154,13 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             } finally {
                 try {
                     withContext(NonCancellable) {
+                        runId?.let { id ->
+                            val report = withContext(Dispatchers.IO) {
+                                journal.finish(id, end.name, metrics)
+                                journal.report()
+                            }
+                            _state.update { it.copy(diagnostics = report) }
+                        }
                         turn?.let { saved ->
                             withContext(Dispatchers.IO) {
                                 chats.saveAnswer(saved.answerId, body.toString(), end)

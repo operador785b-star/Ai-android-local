@@ -1,5 +1,7 @@
 package com.ialocal.android.ui
 
+import android.content.ClipData
+
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
@@ -44,6 +46,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -54,6 +57,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -70,6 +75,7 @@ import com.ialocal.android.inference.InferenceSettings
 import com.ialocal.android.model.InstalledModel
 import com.ialocal.android.model.ModelCatalog
 import com.ialocal.android.model.ModelAvailability
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -104,7 +110,7 @@ internal fun ModelScreen(
             }
             items(available, key = { it.sha256 }) { model ->
                 val title = model.name.substringBefore(" · ")
-                PreferenceCard(title, "Q4_K_M · 4 bits · ${fileSize(model.bytes)}", Icons.Default.Build,
+                PreferenceCard(title, "Q4_K_M · ${fileSize(model.bytes)} · ${model.license}", Icons.Default.Build,
                     tone = GlassTone.TINTED) {
                     Text("La descarga se verifica con SHA-256.",
                         style = MaterialTheme.typography.bodyMedium, color = colors.softInk)
@@ -169,7 +175,7 @@ internal fun ModelScreen(
                     }
                 }
             }
-            item {
+            if (ModelCatalog.candidates.isNotEmpty()) item {
                 Text("Candidatos", style = MaterialTheme.typography.titleLarge)
             }
             items(ModelCatalog.candidates, key = { it.sha256 }) { model ->
@@ -291,7 +297,24 @@ internal fun SettingsScreen(
                 }
             }
             item {
-                PreferenceCard("Licencias", null, Icons.Default.Info, modifier = Modifier.glassReveal(entry, 3)) {
+                PreferenceCard("Diagnóstico local", "Tokens/s, latencia, pico RSS y resultado", Icons.Default.Info,
+                    modifier = Modifier.glassReveal(entry, 3)) {
+                    if (state.diagnostics.isBlank()) {
+                        Text("Las mediciones aparecerán después de generar una respuesta.",
+                            style = MaterialTheme.typography.bodyMedium, color = colors.softInk)
+                    } else {
+                        val clipboard = LocalClipboard.current
+                        val scope = rememberCoroutineScope()
+                        GlassButton({
+                            scope.launch {
+                                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Diagnóstico", state.diagnostics)))
+                            }
+                        }, Modifier.fillMaxWidth(), primary = false) { Text("Copiar diagnóstico JSON") }
+                    }
+                }
+            }
+            item {
+                PreferenceCard("Licencias", null, Icons.Default.Info, modifier = Modifier.glassReveal(entry, 4)) {
                     TextButton(onClick = { license = R.raw.llama_license }) { Text("llama.cpp · MIT") }
                     TextButton(onClick = { license = R.raw.qwen_license }) { Text("Qwen3.5 · Apache 2.0") }
                     TextButton(onClick = { license = R.raw.manrope_license }) { Text("Manrope · SIL OFL 1.1") }

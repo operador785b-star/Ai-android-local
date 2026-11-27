@@ -3,7 +3,10 @@
 #include <gguf.h>
 
 #include <algorithm>
+#include <chrono>
+#include <sys/resource.h>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -14,6 +17,36 @@ enum Result : jint {
     complete = 0, limit = 1, stopped = 2, invalid_model = 3,
     prompt_too_long = 4, inference_error = 5, no_memory = 6,
 };
+
+using Clock = std::chrono::steady_clock;
+
+struct Metrics {
+    Clock::time_point started = Clock::now();
+    Clock::time_point first{};
+    jlong prompt = 0;
+    jlong output = 0;
+
+    void write(JNIEnv *env, jlongArray target, Result result) const {
+        if (env->ExceptionCheck()) return;
+        const auto now = Clock::now();
+        const auto ms = [](auto duration) {
+            return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        };
+        rusage memory{};
+        const jlong rss = getrusage(RUSAGE_SELF, &memory) == 0 ? memory.ru_maxrss : 0;
+        const bool emitted = first != Clock::time_point{};
+        const jlong values[] = {prompt, output, ms(now - started),
+            emitted ? ms(first - started) : -1, emitted ? ms(now - first) : 0, rss, result};
+        env->SetLongArrayRegion(target, 0, 7, values);
+    }
+};
+
+int profile_from_architecture(const char *architecture) {
+    if (std::strcmp(architecture, "qwen35") == 0) return 1;
+    if (std::strcmp(architecture, "lfm3") == 0) return 2;
+    if (std::strcmp(architecture, "nanbeige") == 0) return 3;
+    return 0;
+}
 
 struct Callback {
     JNIEnv *env;
@@ -57,15 +90,14 @@ std::vector<llama_token> select_prompt(
 }
 
 Result run(JNIEnv *env, jstring path, jobjectArray prompts, int n_ctx, int output,
-           int threads, const Callback &callback) {
+           int threads, int profile, uint32_t seed, const Callback &callback, Metrics &metrics) {
     static std::once_flag backend;
     std::call_once(backend, llama_backend_init);
     if (!callback.running()) return stopped;
 
     auto model_params = llama_model_default_params();
     model_params.n_gpu_layers = 0;
-    model_params.use_mmap = true;
-    model_params.use_mlock = false;
+    model_params.load_mode = LLAMA_LOAD_MODE_MMAP;
     model_params.progress_callback = [](float, void *data) {
         return static_cast<const Callback *>(data)->running();
     };
@@ -81,11 +113,12 @@ Result run(JNIEnv *env, jstring path, jobjectArray prompts, int n_ctx, int outpu
 
     char architecture[32] = {};
     llama_model_meta_val_str(model.get(), "general.architecture", architecture, sizeof(architecture));
-    if (std::strcmp(architecture, "qwen35") != 0) return invalid_model;
+    if (profile_from_architecture(architecture) != profile) return invalid_model;
     const auto *vocab = llama_model_get_vocab(model.get());
     auto tokens = select_prompt(env, prompts, vocab, n_ctx - output, callback);
     if (!callback.running()) return stopped;
     if (tokens.empty()) return prompt_too_long;
+    metrics.prompt = static_cast<jlong>(tokens.size());
 
     auto ctx_params = llama_context_default_params();
     constexpr int batch_size = 64;
@@ -109,11 +142,23 @@ Result run(JNIEnv *env, jstring path, jobjectArray prompts, int n_ctx, int outpu
 
     std::unique_ptr<llama_sampler, decltype(&llama_sampler_free)> sampler(
         llama_sampler_chain_init(llama_sampler_chain_default_params()), llama_sampler_free);
-    llama_sampler_chain_add(sampler.get(), llama_sampler_init_penalties(64, 1.0f, 0.0f, 1.5f));
-    llama_sampler_chain_add(sampler.get(), llama_sampler_init_top_k(20));
-    llama_sampler_chain_add(sampler.get(), llama_sampler_init_top_p(0.8f, 1));
-    llama_sampler_chain_add(sampler.get(), llama_sampler_init_temp(0.7f));
-    llama_sampler_chain_add(sampler.get(), llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
+    // The chosen text profiles explicitly close the thinking block before generation.
+    std::vector<llama_logit_bias> closed_thinking;
+    for (const char *marker : {"<think>", "</think>"}) {
+        llama_token token;
+        if (llama_tokenize(vocab, marker, std::strlen(marker), &token, 1, false, true) == 1) {
+            closed_thinking.push_back({token, -std::numeric_limits<float>::infinity()});
+        }
+    }
+    if (!closed_thinking.empty()) {
+        llama_sampler_chain_add(sampler.get(), llama_sampler_init_logit_bias(
+            llama_vocab_n_tokens(vocab), closed_thinking.size(), closed_thinking.data()));
+    }
+    llama_sampler_chain_add(sampler.get(), llama_sampler_init_penalties(llama_vocab_n_tokens(vocab), 64, 1.0f, 0.0f, profile == 1 ? 1.5f : 0.0f));
+    llama_sampler_chain_add(sampler.get(), llama_sampler_init_top_k(profile == 2 ? 50 : 20));
+    llama_sampler_chain_add(sampler.get(), llama_sampler_init_top_p(profile == 1 ? 0.8f : 0.95f, 1));
+    llama_sampler_chain_add(sampler.get(), llama_sampler_init_temp(profile == 2 ? 0.3f : 0.7f));
+    llama_sampler_chain_add(sampler.get(), llama_sampler_init_dist(seed));
 
     std::vector<char> buffer(256);
     for (int step = 0; step < output; ++step) {
@@ -126,7 +171,11 @@ Result run(JNIEnv *env, jstring path, jobjectArray prompts, int n_ctx, int outpu
             length = llama_token_to_piece(vocab, token, buffer.data(), buffer.size(), 0, false);
         }
         if (length < 0) return inference_error;
-        if (length > 0 && !callback.emit(buffer.data(), length)) return inference_error;
+        ++metrics.output;
+        if (length > 0) {
+            if (metrics.first == Clock::time_point{}) metrics.first = Clock::now();
+            if (!callback.emit(buffer.data(), length)) return inference_error;
+        }
         if (step + 1 < output && llama_decode(ctx.get(), llama_batch_get_one(&token, 1)) != 0) {
             return inference_error;
         }
@@ -138,8 +187,8 @@ Result run(JNIEnv *env, jstring path, jobjectArray prompts, int n_ctx, int outpu
 extern "C" JNIEXPORT jint JNICALL
 Java_com_ialocal_android_inference_NativeBridge_generate(
         JNIEnv *env, jobject, jstring path, jobjectArray prompts, jint context,
-        jint output, jint threads, jobject receiver) {
-    if (context < 1024 || context > 4096 || output < 1 || output > 1024 ||
+        jint output, jint threads, jint profile, jint seed, jlongArray stats, jobject receiver) {
+    if (!stats || env->GetArrayLength(stats) < 7 || profile < 1 || profile > 3 || context < 1024 || context > 4096 || output < 1 || output > 1024 ||
         output >= context || threads < 1 || threads > 4) {
         return inference_error;
     }
@@ -149,13 +198,18 @@ Java_com_ialocal_android_inference_NativeBridge_generate(
     const auto piece = env->GetMethodID(type, "onBytes", "([B)V");
     if (!piece) return inference_error;
     env->DeleteLocalRef(type);
+    Metrics metrics;
+    Result result;
     try {
-        return run(env, path, prompts, context, output, threads, {env, receiver, active, piece});
+        result = run(env, path, prompts, context, output, threads, profile, static_cast<uint32_t>(seed),
+                     {env, receiver, active, piece}, metrics);
     } catch (const std::bad_alloc &) {
-        return no_memory;
+        result = no_memory;
     } catch (const std::exception &) {
-        return inference_error;
+        result = inference_error;
     }
+    metrics.write(env, stats, result);
+    return result;
 }
 
 // Metadata-only preflight. Keep this gate aligned with the profiles implemented by the app.
@@ -170,8 +224,9 @@ Java_com_ialocal_android_inference_NativeBridge_inspectModel(JNIEnv *env, jobjec
             gguf_init_from_file(filename.get(), {true, nullptr}), gguf_free);
         if (!model || gguf_get_n_tensors(model.get()) == 0) return 0;
         const auto arch = gguf_find_key(model.get(), "general.architecture");
-        if (arch < 0 || gguf_get_kv_type(model.get(), arch) != GGUF_TYPE_STRING ||
-            std::strcmp(gguf_get_val_str(model.get(), arch), "qwen35") != 0) return 0;
+        if (arch < 0 || gguf_get_kv_type(model.get(), arch) != GGUF_TYPE_STRING) return 0;
+        const int profile = profile_from_architecture(gguf_get_val_str(model.get(), arch));
+        if (profile != 1) return profile;
         const auto mtp = gguf_find_key(model.get(), "qwen35.nextn_predict_layers");
         if (mtp >= 0 && (gguf_get_kv_type(model.get(), mtp) != GGUF_TYPE_UINT32 ||
                          gguf_get_val_u32(model.get(), mtp) != 0)) return 0;

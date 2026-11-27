@@ -50,6 +50,10 @@ class ModelStore(private val context: Context) {
         ) { useInput ->
             val connection = openDownload(URL(model.url))
             try {
+                val length = connection.contentLengthLong
+                if (length > 0 && length != model.bytes) {
+                    throw ModelException("El tamaño anunciado por el servidor no coincide con el catálogo.")
+                }
                 connection.inputStream.use(useInput)
             } finally {
                 connection.disconnect()

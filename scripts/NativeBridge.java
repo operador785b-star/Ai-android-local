@@ -9,7 +9,11 @@ public final class NativeBridge {
     private native int inspectModel(String path);
 
     private native int generate(String path, byte[][] prompts, int context, int output,
-                                int threads, Callback callback);
+                                int threads, int profile, int seed, long[] metrics, Callback callback);
+
+    private int generate(String path, byte[][] prompts, int context, int output, int threads, Callback callback) {
+        return generate(path, prompts, context, output, threads, 1, -1, new long[7], callback);
+    }
 
     public static final class Callback {
         final ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -27,12 +31,25 @@ public final class NativeBridge {
                 + "<|im_start|>assistant\n<think>\n\n</think>\n\n").getBytes(StandardCharsets.UTF_8);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         NativeBridge bridge = new NativeBridge();
         if (args.length != 0 && args[0].equals("--inspect")) {
             for (int i = 1; i < args.length; i++) {
                 System.out.println(bridge.inspectModel(args[i]) + " " + args[i]);
             }
+            return;
+        }
+        if (args.length == 6 && args[0].equals("--eval")) {
+            var prompt = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(args[3]));
+            int profile = Integer.parseInt(args[2]);
+            if (bridge.inspectModel(args[1]) != profile) throw new IllegalArgumentException("Perfil GGUF incompatible");
+            var capture = new Callback(false);
+            var metrics = new long[7];
+            int status = bridge.generate(args[1], new byte[][] {prompt}, 2048,
+                    Integer.parseInt(args[4]), Integer.parseInt(args[5]), profile, 1234, metrics, capture);
+            System.out.write(capture.output.toByteArray());
+            System.err.println("IA_METRICS=" + java.util.Arrays.toString(metrics));
+            if (status != 0 && status != 1) System.exit(status);
             return;
         }
         Callback ongoing = new Callback(false);

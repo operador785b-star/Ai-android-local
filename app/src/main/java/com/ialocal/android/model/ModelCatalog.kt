@@ -35,7 +35,7 @@ object ModelCatalog {
         availability = ModelAvailability.Ready(EngineProfile.QWEN35)
     )
 
-    val candidates = listOf(
+    private val alternatives = listOf(
         CatalogModel(
             name = "Liquid AI LFM3-1.7B",
             bytes = 1_099_627_808L,
@@ -43,7 +43,7 @@ object ModelCatalog {
             url = "https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF/resolve/" +
                 "cd0c74c575b5c416f3011b5b4c298077f26ca8c2/LFM3-1.7B-Q4_K_M.gguf",
             license = "LFM Open License 1.0",
-            availability = ModelAvailability.Candidate("lfm3")
+            availability = ModelAvailability.Ready(EngineProfile.LFM3)
         ),
         CatalogModel(
             name = "Nanbeige 4.2 3B",
@@ -52,11 +52,12 @@ object ModelCatalog {
             url = "https://huggingface.co/42ailab/Nanbeige4.2-3B-GGUF/resolve/" +
                 "362f75f134fcb874ec20e751d391d4e96d813b80/Nanbeige_Nanbeige4.2-3B-Q4_K_M.gguf",
             license = "Apache 2.0",
-            availability = ModelAvailability.Candidate("nanbeige")
+            availability = ModelAvailability.Ready(EngineProfile.NANBEIGE)
         )
     )
 
-    val all = listOf(recommended) + candidates
+    val all = listOf(recommended) + alternatives
+    val candidates = all.filter { it.availability is ModelAvailability.Candidate }
 
     internal fun downloadable(sha256: String): CatalogModel =
         all.firstOrNull { it.sha256 == sha256 && it.availability is ModelAvailability.Ready }

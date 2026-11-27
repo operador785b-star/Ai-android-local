@@ -1,0 +1,10 @@
+{"task":"codigo","instruction":"Corrige el índice de esta lista Python: xs=[7,9]; print(xs[2]). Quiero mostrar el primer elemento.","response":"Usa xs[0]. Python empieza a contar los índices en cero."}
+{"task":"codigo","instruction":"Dame solo un JSON con la clave moneda y el valor PEN.","response":"{\"moneda\":\"PEN\"}"}
+{"task":"codigo","instruction":"Escribe el CSV de una columna color con las filas rojo y negro.","response":"color\nrojo\nnegro"}
+{"task":"codigo","instruction":"Crea una tabla Markdown con las columnas acción y estado, y la fila revisar, pendiente.","response":"| acción | estado |\n|---|---|\n| revisar | pendiente |"}
+{"task":"matematicas","instruction":"Calcula el 15 % de 200 y explica una operación.","response":"Multiplica 200 por 0,15. El resultado es 30."}
+{"task":"matematicas","instruction":"Resuelve 2y+3=19 con dos pasos.","response":"Resta 3 en ambos lados: 2y=16. Divide entre 2: y=8."}
+{"task":"razonamiento","instruction":"Ningún cuadrado tiene cinco lados. A tiene cinco lados. ¿Puede A ser un cuadrado?","response":"No. Si tiene cinco lados, contradice una condición necesaria para ser cuadrado."}
+{"task":"razonamiento","instruction":"Ana tiene más libros que Bea y Bea tiene más que Ciro. ¿Quién tiene menos libros?","response":"Ciro tiene menos libros."}
+{"task":"conversacion","instruction":"Explica qué significa un kilómetro en una frase.","response":"Un kilómetro es una unidad de longitud equivalente a mil metros."}
+{"task":"conversacion","instruction":"Escribe dos líneas. En la primera pon NORTE y en la segunda SUR. Sin adornos.","response":"NORTE\nSUR"}

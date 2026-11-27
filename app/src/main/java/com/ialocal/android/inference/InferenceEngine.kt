@@ -26,8 +26,25 @@ data class GenerationRequest(
 
 enum class GenerationEnd { COMPLETE, LENGTH_LIMIT }
 
+data class InferenceMetrics(
+    val promptTokens: Long,
+    val outputTokens: Long,
+    val totalMs: Long,
+    val firstPieceMs: Long,
+    val decodeMs: Long,
+    val processPeakRssKiB: Long,
+    val code: Long
+) {
+    val tokensPerSecond: Double?
+        get() = if (outputTokens > 1 && decodeMs > 0) (outputTokens - 1) * 1000.0 / decodeMs else null
+}
+
 interface InferenceEngine {
-    suspend fun generate(request: GenerationRequest, onText: (String) -> Unit): GenerationEnd
+    suspend fun generate(
+        request: GenerationRequest,
+        onMetrics: (InferenceMetrics) -> Unit = {},
+        onText: (String) -> Unit
+    ): GenerationEnd
 }
 
 class InferenceException(message: String) : Exception(message)

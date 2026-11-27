@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-revision=b97ebdc98f6053604a19d861c08d8087601b96e0
-digest=29e57a3273f25575e40859d6d7d10c9bea0b72f9e25dc19827e34cb05098239a
+revision=171527522610996f5f0acf12334e185156ca8f44
+digest=00fe7d900aac2906edb7fee0a11c7255709f72c022ac1ba54a58984562eaf60c
 destination=vendor/llama.cpp
 if [[ -d "$destination" ]]; then
     if [[ -f "$destination/include/llama.h" && -f "$destination/.revision" ]] &&

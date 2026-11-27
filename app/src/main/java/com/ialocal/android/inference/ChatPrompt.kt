@@ -1,14 +1,15 @@
 package com.ialocal.android.inference
 
-internal object QwenPrompt {
+internal object ChatPrompt {
     private const val system = "Eres IA Local, un asistente útil. Responde en el idioma del usuario " +
-        "salvo que indique lo contrario. Si escribes código, usa bloques Markdown con lenguaje. " +
+        "salvo que indique lo contrario. Respeta el formato exacto que pida. " +
+        "Usa bloques Markdown para código si el usuario no pidió texto sin formato. " +
         "Si falta información, dilo con claridad."
     private val controlToken = Regex("<\\|[^|<>\\n]{1,80}\\|>|</?think>")
     private const val MAX_HISTORY_CHARS = 24_000
 
     // Candidates go from most context to least. Native tokenization picks the first one that fits.
-    fun candidates(history: List<Exchange>, user: String): Array<ByteArray> {
+    fun candidates(history: List<Exchange>, user: String, profile: EngineProfile = EngineProfile.QWEN35): Array<ByteArray> {
         var remaining = MAX_HISTORY_CHARS
         val recent = history.takeLast(12).asReversed().takeWhile {
             remaining -= it.user.length + it.assistant.length
@@ -17,7 +18,7 @@ internal object QwenPrompt {
         val formatted = recent.map {
             buildString {
                 turn("user", it.user)
-                turn("assistant", it.assistant)
+                turn("assistant", it.assistant, profile.historyPrefix)
             }
         }
         return Array(formatted.size + 1) { drop ->
@@ -25,13 +26,13 @@ internal object QwenPrompt {
                 turn("system", system)
                 for (index in drop until formatted.size) append(formatted[index])
                 turn("user", user)
-                append("<|im_start|>assistant\n<think>\n\n</think>\n\n")
+                append("<|im_start|>assistant\n").append(profile.answerPrefix)
             }.encodeToByteArray()
         }
     }
 
-    private fun StringBuilder.turn(role: String, text: String) {
-        append("<|im_start|>").append(role).append('\n')
+    private fun StringBuilder.turn(role: String, text: String, prefix: String = "") {
+        append("<|im_start|>").append(role).append('\n').append(prefix)
         append(controlToken.replace(text.replace("\u0000", "\uFFFD")) {
             it.value.replace('<', '‹').replace('>', '›')
         })
