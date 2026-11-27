@@ -1,0 +1,182 @@
+{
+  "profile": "nanbeige",
+  "sha256": "b92d2e35c9876b0c4bc671996360204f4149d0546c23d5954d5eb3b106c81f24",
+  "seed": 1234,
+  "context": 2048,
+  "threads": 2,
+  "suite_sha256": "e5c4fd5bf5e32ca7427b96f81248495140dc01ed67ff06f785ff14a24281e204",
+  "passed": 7,
+  "total": 10,
+  "results": [
+    {
+      "id": "codigo-fibonacci",
+      "category": "programacion",
+      "passed": false,
+      "answer": "```python\ndef fibonacci(n):\n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    a, b = 0, 1\n    for _ in range(2, n + 1):\n        a, b = b, a + b\n    return b\n```\n\n**Explicación breve:**\n- Para `n=0` devuelve `0`, y para `n=1` devuelve",
+      "metrics": {
+        "tokens_entrada": 143,
+        "tokens_salida": 110,
+        "total_ms": 31575,
+        "primer_fragmento_ms": 11940,
+        "decodificacion_ms": 19635,
+        "pico_rss_proceso_kib": 4208572,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 5.55
+      },
+      "error": null
+    },
+    {
+      "id": "bug-acumulador",
+      "category": "depuracion",
+      "passed": true,
+      "answer": "```python\ns = s + x\n```",
+      "metrics": {
+        "tokens_entrada": 152,
+        "tokens_salida": 10,
+        "total_ms": 15915,
+        "primer_fragmento_ms": 13296,
+        "decodificacion_ms": 2619,
+        "pico_rss_proceso_kib": 4209172,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 3.44
+      },
+      "error": null
+    },
+    {
+      "id": "capital-peru",
+      "category": "conocimiento",
+      "passed": true,
+      "answer": "Lima",
+      "metrics": {
+        "tokens_entrada": 113,
+        "tokens_salida": 2,
+        "total_ms": 10598,
+        "primer_fragmento_ms": 10203,
+        "decodificacion_ms": 395,
+        "pico_rss_proceso_kib": 4209356,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 2.53
+      },
+      "error": null
+    },
+    {
+      "id": "agua",
+      "category": "conocimiento",
+      "passed": true,
+      "answer": "0",
+      "metrics": {
+        "tokens_entrada": 125,
+        "tokens_salida": 1,
+        "total_ms": 10177,
+        "primer_fragmento_ms": 9960,
+        "decodificacion_ms": 216,
+        "pico_rss_proceso_kib": 4208508,
+        "codigo_motor": 0,
+        "tokens_por_segundo": null
+      },
+      "error": null
+    },
+    {
+      "id": "silogismo",
+      "category": "logica",
+      "passed": true,
+      "answer": "No",
+      "metrics": {
+        "tokens_entrada": 143,
+        "tokens_salida": 1,
+        "total_ms": 11569,
+        "primer_fragmento_ms": 11353,
+        "decodificacion_ms": 215,
+        "pico_rss_proceso_kib": 4208896,
+        "codigo_motor": 0,
+        "tokens_por_segundo": null
+      },
+      "error": null
+    },
+    {
+      "id": "ecuacion",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "3(x - 2) + 8 = 20\n\nResolviendo paso a paso:\n1. Expande: 3x - 6 + 8",
+      "metrics": {
+        "tokens_entrada": 122,
+        "tokens_salida": 40,
+        "total_ms": 16456,
+        "primer_fragmento_ms": 9843,
+        "decodificacion_ms": 6612,
+        "pico_rss_proceso_kib": 4209292,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 5.9
+      },
+      "error": null
+    },
+    {
+      "id": "dos-lineas",
+      "category": "instrucciones",
+      "passed": false,
+      "answer": "AZUL  \nVERDE",
+      "metrics": {
+        "tokens_entrada": 122,
+        "tokens_salida": 6,
+        "total_ms": 10361,
+        "primer_fragmento_ms": 9393,
+        "decodificacion_ms": 967,
+        "pico_rss_proceso_kib": 4209488,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 5.17
+      },
+      "error": null
+    },
+    {
+      "id": "markdown",
+      "category": "markdown",
+      "passed": true,
+      "answer": "| fruta | cantidad |\n|-------|----------|\n| pera | 2 |\n| uva | 4 |",
+      "metrics": {
+        "tokens_entrada": 128,
+        "tokens_salida": 28,
+        "total_ms": 16953,
+        "primer_fragmento_ms": 12538,
+        "decodificacion_ms": 4414,
+        "pico_rss_proceso_kib": 4209148,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 6.12
+      },
+      "error": null
+    },
+    {
+      "id": "csv",
+      "category": "csv",
+      "passed": true,
+      "answer": "ciudad,altitud\nLima,154",
+      "metrics": {
+        "tokens_entrada": 131,
+        "tokens_salida": 12,
+        "total_ms": 12432,
+        "primer_fragmento_ms": 10440,
+        "decodificacion_ms": 1992,
+        "pico_rss_proceso_kib": 4209120,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 5.52
+      },
+      "error": null
+    },
+    {
+      "id": "json",
+      "category": "json",
+      "passed": true,
+      "answer": "{\n  \"nombre\": \"Ana\",\n  \"edad\": 23,\n  \"activo\": true\n}",
+      "metrics": {
+        "tokens_entrada": 135,
+        "tokens_salida": 27,
+        "total_ms": 14824,
+        "primer_fragmento_ms": 10454,
+        "decodificacion_ms": 4370,
+        "pico_rss_proceso_kib": 4208976,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 5.95
+      },
+      "error": null
+    }
+  ]
+}

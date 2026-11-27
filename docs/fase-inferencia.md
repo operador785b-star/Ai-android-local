@@ -18,9 +18,27 @@ javac -d build/inference-host scripts/NativeBridge.java
 unshare -Urn -- python3 evaluation/run.py lfm3 /ruta/LFM3.gguf build/inference-host /tmp/lfm3.json
 ```
 
-También se aceptan los perfiles `qwen35` y `nanbeige`. Los informes registran huella del modelo, salida, tiempo, tokens y código del motor. `unshare -Urn` requiere espacios de nombres de usuario habilitados en Linux.
+También se aceptan los perfiles `qwen35` y `nanbeige`. Añade `--cases evaluation/history-es.jsonl` para ejecutar el caso con un turno previo. Los informes registran huella del modelo, salida, tiempo, tokens y código del motor. `unshare -Urn` requiere espacios de nombres de usuario habilitados en Linux.
+
+### Resultados previos al entrenamiento
+
+Se verificó el SHA-256 de los tres GGUF completos y se ejecutó el mismo banco en Linux x86-64 sobre un AMD EPYC 9V74, con la red aislada. Los tres modelos generaron texto por JNI sin errores del motor, permitieron cancelar tras el primer fragmento y respondieron a una nueva inferencia en el mismo proceso. Los tres también recuperaron exactamente el dato del turno anterior en el caso adicional de historial.
+
+| Modelo Q4_K_M | Casos superados | Mediana de tokens/s | Mediana al primer fragmento | Pico RSS de proceso |
+| --- | ---: | ---: | ---: | ---: |
+| Liquid AI LFM3-1.7B | 4/10 | 20,68 | 3,13 s | 1,84 GiB |
+| Qwen3.5-2B | 7/10 | 15,47 | 2,63 s | 1,85 GiB |
+| Nanbeige 4.2 3B | 8/10 | 4,93 | 8,40 s | 2,92 GiB |
+
+La velocidad es la mediana de los casos con al menos dos tokens y tiempo de decodificación registrado. El tiempo al primer fragmento incluye la apertura del modelo y la evaluación del mensaje. El pico RSS es el máximo observado entre los diez procesos. Los tres modelos fallaron las comprobaciones estrictas de Fibonacci y de ecuaciones. Nanbeige pasó los tres formatos de tabla. Qwen pasó Markdown y JSON. LFM3 pasó CSV y JSON.
+
+En Nanbeige se desactivó el búfer adicional de CPU para reempaquetar pesos. Con el búfer activo, el pico observado fue de 4,01 GiB y la mediana de velocidad fue de 5,54 tokens/s. Con el búfer desactivado, el pico bajó a 2,92 GiB. Las métricas corresponden al host Linux y se medirán aparte en el Redmi.
+
+[Informe LFM3](../evaluation/results/lfm3.json) · [Informe Qwen](../evaluation/results/qwen35.json) · [Informe Nanbeige](../evaluation/results/nanbeige.json) · [Nanbeige con búfer adicional](../evaluation/results/nanbeige-con-reempaquetado.json) · [Pruebas de historial](../evaluation/results/historial)
 
 **Ajustes → Diagnóstico local** conserva los últimos 16 intentos, registra las interrupciones recuperadas al volver a abrir la app y permite copiar JSON. El RSS es el máximo del proceso desde el arranque y puede incluir otras inferencias o el uso de memoria de la interfaz. La velocidad excluye la espera al primer fragmento. Los registros omiten el texto y contienen nombre del modelo, contexto, hilos y métricas.
+
+En el teléfono quedan por verificar la descarga desde la interfaz, selección y borrado, arranque del motor ARM64 en modo avión con Wi-Fi apagada y la estabilidad con varias respuestas seguidas. Para comparar con el banco, usa 2.048 tokens de contexto y dos hilos. [Protocolo de prueba física](verificacion.md#prueba-pendiente-en-el-redmi)
 
 ## Personalización
 

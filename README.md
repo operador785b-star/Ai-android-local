@@ -1,10 +1,10 @@
 # IA Local Android
 
-Es una app para usar modelos de Ia localmente. La versión 0.4.0 ofrece chat en español con una interfaz de cristal violeta y azul y está diseñada para el Redmi Note 14 Pro 4G con 8 GB de RAM. Usa Kotlin, Jetpack Compose, SQLite y llama.cpp sobre CPU ARM64.
+Es una app para usar modelos de IA localmente. La versión 0.4.0 ofrece chat en español con una interfaz de cristal violeta y azul y está diseñada para el Redmi Note 14 Pro 4G con 8 GB de RAM. Usa Kotlin, Jetpack Compose, SQLite y llama.cpp sobre CPU ARM64.
 
 ## Instalar desde el celular
 
-1. Descarga **IA-Local-Android.apk**. Si lo obtienes de GitHub Actions, abre el flujo **APK Android**, elige una ejecución verde y descarga el artefacto **IA-Local-Android-ARM64**. Inicia sesión con acceso al repositorio privado y extrae el ZIP desde la app Archivos.
+1. Descarga **IA-Local-Android.apk**. Si lo obtienes de GitHub Actions, abre el flujo **APK Android**, elige una ejecución verde y descarga el artefacto **IA-Local-Android-ARM64**. Inicia sesión en GitHub y extrae el ZIP desde la app Archivos.
 2. Abre el APK. Si HyperOS lo solicita, habilita **Instalar aplicaciones desconocidas** para la aplicación que abrió el archivo y confirma la instalación. El APK de prueba requiere Android 9 o posterior y ARM64.
 3. Abre **IA Local Android → Configurar modelo → Descargar Qwen3.5-2B**. Deja la aplicación abierta hasta que termine la verificación. El archivo pesa **1,28 GB**.
 4. Vuelve al chat. Activa modo avión y comprueba que la Wi-Fi también esté apagada. Escribe «¿Cuánto es 6 × 7?» y luego «Escribe una función Python que devuelva el doble de un número».
@@ -20,7 +20,8 @@ El APK estándar mantiene el identificador `com.ialocal.android` y el historial 
 - Los bloques de código tienen desplazamiento horizontal y un botón para copiar. La aplicación muestra el código como texto.
 - **Ajustes → Memoria y contexto** controla el contexto, el máximo de salida y los hilos. La configuración inicial es 2.048 tokens de contexto, hasta 512 de respuesta y cuatro hilos.
 - **Modelos locales → Importar GGUF** copia un modelo de texto Qwen3.5 a almacenamiento privado. Introduce el SHA-256 que te dio quien publicó el archivo y elige el GGUF. Una versión con otro hash queda disponible junto a la anterior.
-- Si se interrumpe una descarga, puedes iniciarla de nuevo. El tamaño y el SHA-256 del archivo se comprueban antes de publicarlo en la biblioteca de modelos.
+- El catálogo ofrece Qwen3.5-2B (1,28 GB), LFM3-1.7B (1,10 GB) y Nanbeige 4.2 3B (2,68 GB). Cada modelo se descarga por separado y se puede activar o eliminar desde **Modelos locales**. Si se interrumpe una descarga, puedes iniciarla de nuevo. El tamaño y el SHA-256 del archivo se comprueban antes de publicarlo en la biblioteca de modelos.
+- **Ajustes → Diagnóstico local** permite copiar las métricas de inferencia sin incluir el contenido de los chats.
 
 ## Compilar y probar
 

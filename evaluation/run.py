@@ -20,8 +20,16 @@ METRICS = ("tokens_entrada", "tokens_salida", "total_ms", "primer_fragmento_ms",
            "decodificacion_ms", "pico_rss_proceso_kib", "codigo_motor")
 
 
-def chat_prompt(user, profile):
-    return f"<|im_start|>system\n{SYSTEM}<|im_end|>\n<|im_start|>user\n{user}<|im_end|>\n<|im_start|>assistant\n{profile[1]}"
+def chat_prompt(case, profile):
+    def turn(role, content):
+        return f"<|im_start|>{role}\n{content}<|im_end|>\n"
+
+    prompt = turn("system", SYSTEM)
+    history_prefix = "" if profile[0] == 1 else profile[1]
+    for exchange in case.get("history", []):
+        prompt += turn("user", exchange["user"])
+        prompt += turn("assistant", history_prefix + exchange["assistant"])
+    return prompt + turn("user", case["prompt"]) + f"<|im_start|>assistant\n{profile[1]}"
 
 
 def verify(case, answer):
@@ -79,7 +87,7 @@ def main():
     with tempfile.TemporaryDirectory() as temp:
         prompt_file = Path(temp) / "prompt"
         for case in cases:
-            prompt_file.write_text(chat_prompt(case["prompt"], profile), encoding="utf-8")
+            prompt_file.write_text(chat_prompt(case, profile), encoding="utf-8")
             error = None
             metrics = {}
             try:
