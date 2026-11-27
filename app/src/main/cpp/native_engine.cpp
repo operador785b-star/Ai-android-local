@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <llama.h>
 #include <gguf.h>
+#include <ggml-cpu.h>
 
 #include <algorithm>
 #include <chrono>
@@ -86,12 +87,14 @@ struct Timer {
 
 struct Session {
     std::unique_ptr<llama_model, decltype(&llama_model_free)> model{nullptr, llama_model_free};
+    std::unique_ptr<ggml_threadpool, decltype(&ggml_threadpool_free)> pool{nullptr, ggml_threadpool_free};
     std::unique_ptr<llama_context, decltype(&llama_free)> ctx{nullptr, llama_free};
     std::string path;
     struct stat file_info{};
     jlong conversation = 0;
     int context_limit = 0;
     int batch_size = 0;
+    int threads = 0;
     bool hybrid = false;
     int profile = 0;
     llama_token turn_start = LLAMA_TOKEN_NULL;
@@ -102,6 +105,7 @@ struct Session {
 
     void release_context() {
         ctx.reset();
+        pool.reset();
         cached.clear();
         std::vector<uint8_t>().swap(checkpoint);
         checkpoint_at = 0;
@@ -291,10 +295,9 @@ Result run(Session &session, const std::string &path, jlong conversation, JNIEnv
     const int needed = static_cast<int>(tokens.size()) + output;
     const int target_context = profile == 3
         ? std::max(512, (needed + context_block - 1) / context_block * context_block) : n_ctx;
-    if (session.ctx && session.context_limit == n_ctx && session.batch_size == batch_size &&
+    if (session.ctx && session.context_limit == n_ctx && session.batch_size == batch_size && session.threads == threads &&
         llama_n_ctx(session.ctx.get()) >= static_cast<uint32_t>(target_context)) {
         metrics.context_reused = 1;
-        llama_set_n_threads(session.ctx.get(), threads, threads);
     } else {
         session.release_context();
         callback.report(creating_context);
@@ -309,8 +312,13 @@ Result run(Session &session, const std::string &path, jlong conversation, JNIEnv
         session.ctx.reset(llama_init_from_model(session.model.get(), params));
         if (!callback.running()) return callback.stop_reason();
         if (!session.ctx) return no_memory;
+        auto worker_params = ggml_threadpool_params_default(threads);
+        worker_params.poll = 0;
+        session.pool.reset(ggml_threadpool_new(&worker_params));
+        if (session.pool) llama_attach_threadpool(session.ctx.get(), session.pool.get(), nullptr);
         session.context_limit = n_ctx;
         session.batch_size = batch_size;
+        session.threads = threads;
     }
     auto *ctx = session.ctx.get();
     metrics.context = llama_n_ctx(ctx);
