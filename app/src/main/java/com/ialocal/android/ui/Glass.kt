@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,19 +36,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.ialocal.android.R
 
 internal enum class GlassTone { STANDARD, QUIET, TINTED, SHEET }
 
@@ -191,83 +191,54 @@ internal fun GlassIconButton(
 )
 
 @Composable
-internal fun PrismMark(modifier: Modifier = Modifier, size: Dp = 32.dp) {
-    Canvas(modifier.size(size)) {
-        val radius = this.size.minDimension / 2f
-        drawCircle(Brush.linearGradient(listOf(Color(0xFFA679FF), DeepViolet, ElectricBlue)), radius)
-        drawCircle(Color.White.copy(alpha = 0.26f), radius - 0.5.dp.toPx(), style = Stroke(1.dp.toPx()))
-        drawPath(prismStar(center, radius * 0.57f), Color.White)
+internal fun RibbonMark(modifier: Modifier = Modifier, size: Dp = 32.dp) {
+    val dark = LocalGlass.current.dark
+    val shape = RoundedCornerShape(37)
+    Box(
+        modifier.size(size).clip(shape).background(
+            Brush.linearGradient(
+                if (dark) listOf(Color(0xFF39305D), Color(0xFF192844))
+                else listOf(Color(0xFFF0E7FF), Color(0xFFDCEAFF))
+            )
+        ).border(0.8.dp, Color.White.copy(alpha = if (dark) 0.22f else 0.87f), shape),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(painterResource(R.drawable.brand_ribbons), null, Modifier.fillMaxSize())
     }
 }
 
 @Composable
-internal fun PrismOrb(modifier: Modifier = Modifier) {
+internal fun RibbonHero(modifier: Modifier = Modifier) {
     val dark = LocalGlass.current.dark
-    Canvas(modifier.drawWithCache {
-        val h = size.height
-        val w = size.width
-        val origin = Offset(w * 0.50f, h * 0.51f)
-        val radius = minOf(h, w) * 0.31f
-        val sphere = Brush.radialGradient(
-            0f to Color(0x76FFFFFF), 0.26f to Color(0xB8B4A5FF), 0.55f to Color(0xD47458E6),
-            0.79f to Color(0xCE384FBC), 1f to Color(0x78243B8C),
-            center = origin - Offset(radius * 0.32f, radius * 0.42f), radius = radius * 1.53f
-        )
-        val innerGlow = Brush.radialGradient(
-            listOf(Color(0xB660A5FA), Color.Transparent),
-            center = origin + Offset(radius * 0.40f, radius * 0.62f), radius = radius * 1.06f
-        )
-        val halo = Brush.radialGradient(
-            listOf(Violet.copy(alpha = if (dark) 0.36f else 0.29f), Color.Transparent),
-            center = origin, radius = radius * 1.98f
-        )
-        val rim = Brush.linearGradient(
-            listOf(Color(0xFFF5EEFF), Color(0x546D66CA), Color(0xD568B8FF)),
-            origin - Offset(radius, radius), origin + Offset(radius, radius)
-        )
-        val orbitSize = Size(radius * 3.34f, radius * 0.94f)
-        val orbitStart = Offset(origin.x - orbitSize.width / 2, origin.y - orbitSize.height / 2)
-        val orbit = Brush.linearGradient(
-            listOf(Color(0x367591FF), Color(0xCFD3BDFF), Color(0x855EACFC)),
-            origin - Offset(radius * 1.6f, 0f), origin + Offset(radius * 1.6f, 0f)
-        )
-        val reflection = Brush.linearGradient(
-            listOf(Color.Transparent, Color(0xCDFFFFFF), Color.Transparent),
-            origin - Offset(radius, radius), origin + Offset(radius, -radius)
-        )
-        val ballSize = Size(radius * 2, radius * 2)
-        val ballStart = origin - Offset(radius, radius)
-        val star = prismStar(origin, radius * 0.50f)
-        val smallStar = prismStar(Offset(origin.x + radius * 0.66f, origin.y - radius * 0.58f), radius * 0.13f)
-        val starTint = Brush.verticalGradient(
-            listOf(Color.White, Color(0xFFC9D8FF)), origin.y - radius * 0.50f, origin.y + radius * 0.50f
-        )
-        onDrawBehind {
-            drawCircle(halo, radius * 1.98f, origin)
-            rotate(-27f, origin) {
-                drawArc(orbit, 180f, 180f, false, orbitStart, orbitSize, style = Stroke(1.1.dp.toPx()))
+    Box(modifier, contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize().drawWithCache {
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val span = size.minDimension
+            val violet = Brush.radialGradient(
+                listOf(Violet.copy(alpha = if (dark) 0.29f else 0.23f), Color.Transparent),
+                center - Offset(span * 0.17f, span * 0.07f), span * 0.53f
+            )
+            val blue = Brush.radialGradient(
+                listOf(BrightBlue.copy(alpha = if (dark) 0.24f else 0.31f), Color.Transparent),
+                center + Offset(span * 0.14f, span * 0.08f), span * 0.51f
+            )
+            val lens = Brush.linearGradient(
+                listOf(Color.White.copy(alpha = if (dark) 0.11f else 0.55f), Color.Transparent,
+                    BrightBlue.copy(alpha = if (dark) 0.12f else 0.19f)),
+                center - Offset(span * 0.3f, span * 0.4f), center + Offset(span * 0.3f, span * 0.4f)
+            )
+            val bevel = Brush.linearGradient(
+                listOf(Color.White.copy(alpha = if (dark) 0.36f else 0.90f), Color.Transparent,
+                    BrightBlue.copy(alpha = 0.23f)),
+                center - Offset(span * 0.4f, span * 0.4f), center + Offset(span * 0.4f, span * 0.4f)
+            )
+            onDrawBehind {
+                drawRect(violet)
+                drawRect(blue)
+                drawCircle(lens, span * 0.405f, center)
+                drawCircle(bevel, span * 0.405f, center, style = Stroke(1.dp.toPx()))
             }
-            drawCircle(sphere, radius, origin)
-            drawCircle(innerGlow, radius, origin)
-            drawCircle(rim, radius, origin, style = Stroke(1.45.dp.toPx()))
-            drawArc(reflection, 205f, 95f, false, ballStart, ballSize, style = Stroke(2.3.dp.toPx()))
-            drawPath(star, starTint)
-            drawPath(smallStar, Color(0xB7F5E9FF))
-            rotate(-27f, origin) {
-                drawArc(orbit, 0f, 180f, false, orbitStart, orbitSize, style = Stroke(1.5.dp.toPx()))
-            }
-        }
-    }) {}
-}
-
-private fun prismStar(center: Offset, radius: Float) = Path().apply {
-    val x = center.x
-    val y = center.y
-    val control = radius * 0.23f
-    moveTo(x, y - radius)
-    quadraticTo(x + control, y - control, x + radius, y)
-    quadraticTo(x + control, y + control, x, y + radius)
-    quadraticTo(x - control, y + control, x - radius, y)
-    quadraticTo(x - control, y - control, x, y - radius)
-    close()
+        }) {}
+        Image(painterResource(R.drawable.brand_ribbons), null, Modifier.size(158.dp))
+    }
 }

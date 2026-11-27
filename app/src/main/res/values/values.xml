@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="launcher_base">#0E1329</color>
     <string name="app_name">IA Local Android</string>
     <style name="Theme.IALocal" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:windowBackground">#080B18</item>

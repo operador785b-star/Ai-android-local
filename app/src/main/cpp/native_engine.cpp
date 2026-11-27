@@ -1,5 +1,6 @@
 #include <jni.h>
 #include <llama.h>
+#include <gguf.h>
 
 #include <algorithm>
 #include <cstring>
@@ -154,5 +155,28 @@ Java_com_ialocal_android_inference_NativeBridge_generate(
         return no_memory;
     } catch (const std::exception &) {
         return inference_error;
+    }
+}
+
+// Metadata-only preflight. Keep this gate aligned with the profiles implemented by the app.
+extern "C" JNIEXPORT jint JNICALL
+Java_com_ialocal_android_inference_NativeBridge_inspectModel(JNIEnv *env, jobject, jstring path) {
+    const char *file = env->GetStringUTFChars(path, nullptr);
+    if (!file) return 0;
+    const auto release = [env, path](const char *chars) { env->ReleaseStringUTFChars(path, chars); };
+    std::unique_ptr<const char, decltype(release)> filename(file, release);
+    try {
+        std::unique_ptr<gguf_context, decltype(&gguf_free)> model(
+            gguf_init_from_file(filename.get(), {true, nullptr}), gguf_free);
+        if (!model || gguf_get_n_tensors(model.get()) == 0) return 0;
+        const auto arch = gguf_find_key(model.get(), "general.architecture");
+        if (arch < 0 || gguf_get_kv_type(model.get(), arch) != GGUF_TYPE_STRING ||
+            std::strcmp(gguf_get_val_str(model.get(), arch), "qwen35") != 0) return 0;
+        const auto mtp = gguf_find_key(model.get(), "qwen35.nextn_predict_layers");
+        if (mtp >= 0 && (gguf_get_kv_type(model.get(), mtp) != GGUF_TYPE_UINT32 ||
+                         gguf_get_val_u32(model.get(), mtp) != 0)) return 0;
+        return 1;
+    } catch (const std::exception &) {
+        return 0;
     }
 }

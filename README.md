@@ -1,6 +1,6 @@
 # IA Local Android
 
-Es una app para usar modelos de Ia localmente. La versión 0.2.0 ofrece chat en español con una interfaz de cristal violeta y azul y está diseñada para el Redmi Note 14 Pro 4G con 8 GB de RAM. Usa Kotlin, Jetpack Compose, SQLite y llama.cpp sobre CPU ARM64.
+Es una app para usar modelos de Ia localmente. La versión 0.3.0 ofrece chat en español con una interfaz de cristal violeta y azul y está diseñada para el Redmi Note 14 Pro 4G con 8 GB de RAM. Usa Kotlin, Jetpack Compose, SQLite y llama.cpp sobre CPU ARM64.
 
 ## Instalar desde el celular
 
@@ -10,7 +10,7 @@ Es una app para usar modelos de Ia localmente. La versión 0.2.0 ofrece chat en 
 4. Vuelve al chat. Activa modo avión y comprueba que la Wi-Fi también esté apagada. Escribe «¿Cuánto es 6 × 7?» y luego «Escribe una función Python que devuelva el doble de un número».
 5. Cierra y vuelve a abrir la aplicación. Abre **Historial** para comprobar que la conversación siga disponible.
 
-El APK estándar mantiene el identificador `com.ialocal.android` y el historial de SQLite. Android exige la misma firma para actualizar una instalación existente. Si ya tienes la 0.1.0, descarga **IA-Local-Android-vista-previa-ARM64**. Su APK se instala junto a tu app y utiliza un espacio independiente. Puedes probar el rediseño conservando intacta tu instalación anterior. Para instalar por primera vez usa el APK estándar.
+El APK estándar mantiene el identificador `com.ialocal.android` y el historial de SQLite. Android exige la misma firma para actualizar una instalación existente. Si ya tienes una versión firmada para pruebas, descarga **IA-Local-Android-vista-previa-ARM64**. El APK 0.3 usa un identificador de vista previa propio y puede instalarse junto a la app estándar y a la vista previa 0.2. Su historial se guarda en un espacio independiente. Puedes probar el rediseño conservando intacta tu instalación anterior. Para instalar por primera vez usa el APK estándar.
 
 ## Uso
 
@@ -34,6 +34,7 @@ scripts/fetch-llama.sh
 
 El APK se genera en `app/build/outputs/apk/debug/app-debug.apk`. Con un Android ARM64 conectado a ADB, ejecuta `./gradlew :app:connectedDebugAndroidTest` para las pruebas instrumentadas. El flujo de GitHub Actions guarda ambos APK firmados, sus SHA-256, las capturas de Compose y los informes.
 
+- [Evaluación de LFM3 y Nanbeige](docs/candidatos-gguf.md)
 - [Rediseño y capturas](docs/diseno-liquid-glass.md)
 - [Arquitectura y licencias](docs/arquitectura.md)
 - [Verificación y pruebas en el Redmi](docs/verificacion.md)
