@@ -40,8 +40,8 @@ class LlamaEngine : InferenceEngine {
                 val result = try {
                     if (handle == 0L) handle = NativeBridge.openSession()
                     if (handle == 0L) throw InferenceException("Falta memoria para iniciar la sesión del modelo.")
-                    NativeBridge.generateCached(
-                        handle, request.conversationId, 64, settings.mode != PerformanceMode.ECONOMICO,
+                    NativeBridge.generateFormatted(
+                        handle, request.conversationId, 64, settings.mode != PerformanceMode.ECONOMICO, request.jsonObject,
                         request.model.absolutePath,
                         request.profile.prompts(request.history, request.user),
                         settings.contextTokens, settings.outputTokens, request.effectiveThreads,
@@ -106,8 +106,8 @@ internal object NativeBridge {
     external fun openSession(): Long
     external fun closeSession(handle: Long)
 
-    external fun generateCached(
-        handle: Long, conversation: Long, batch: Int, keepCheckpoint: Boolean,
+    external fun generateFormatted(
+        handle: Long, conversation: Long, batch: Int, keepCheckpoint: Boolean, jsonObject: Boolean,
         path: String, prompts: Array<ByteArray>, context: Int, output: Int, threads: Int,
         profile: Int, seed: Int, firstTokenTimeoutMs: Int, metrics: LongArray, receiver: NativeCallback
     ): Int

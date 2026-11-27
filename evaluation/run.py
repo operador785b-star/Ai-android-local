@@ -107,7 +107,10 @@ def main():
     parser.add_argument("--cases", type=Path, default=Path(__file__).with_name("es-local.jsonl"))
     parser.add_argument("--threads", type=int, choices=range(1, 5), default=2)
     parser.add_argument("--system-file", type=Path, help="Mensaje de sistema alternativo en UTF-8")
+    parser.add_argument("--json-object", action="store_true", help="Restringe a un objeto JSON los casos JSON de LFM3")
     args = parser.parse_args()
+    if args.json_object and args.profile != "lfm3":
+        parser.error("El modo JSON de la app se evalúa con LFM3.")
     profile = PROFILES[args.profile]
     system = args.system_file.read_text(encoding="utf-8").strip() if args.system_file else SYSTEM
     if not system:
@@ -122,10 +125,11 @@ def main():
             prompt_file.write_text(chat_prompt(case, profile, system), encoding="utf-8")
             error = None
             metrics = {}
+            mode = "--eval-json" if args.json_object and case["check"] == "json" else "--eval"
             try:
                 call = subprocess.run([
                     "java", f"-Djava.library.path={args.build.resolve()}", "-cp", str(args.build.resolve()),
-                    "com.ialocal.android.inference.NativeBridge", "--eval", str(args.gguf.resolve()),
+                    "com.ialocal.android.inference.NativeBridge", mode, str(args.gguf.resolve()),
                     str(profile[0]), str(prompt_file), str(case["max_tokens"]), str(args.threads)
                 ], capture_output=True, encoding="utf-8", errors="replace", timeout=180)
                 samples = re.search(r"^IA_METRICS=(\[.+\])$", call.stderr, re.MULTILINE)
@@ -149,6 +153,7 @@ def main():
         "profile": args.profile, "sha256": digest, "seed": 1234, "context": 2048, "threads": args.threads,
         "suite_sha256": hashlib.sha256(args.cases.read_bytes()).hexdigest(),
         "system_sha256": hashlib.sha256(system.encode("utf-8")).hexdigest(),
+        "json_object": args.json_object,
         "passed": sum(result["passed"] for result in results), "total": len(results), "results": results,
     }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 

@@ -37,7 +37,8 @@ data class GenerationRequest(
     val settings: InferenceSettings,
     val profile: EngineProfile,
     val conversationId: Long,
-    val effectiveThreads: Int = settings.threads
+    val effectiveThreads: Int = settings.threads,
+    val jsonObject: Boolean = false
 )
 
 enum class GenerationEnd { COMPLETE, LENGTH_LIMIT }

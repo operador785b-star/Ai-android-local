@@ -9,6 +9,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ialocal.android.inference.GenerationEnd
 import com.ialocal.android.inference.GenerationRequest
+import com.ialocal.android.inference.EngineProfile
 import com.ialocal.android.inference.InferenceException
 import com.ialocal.android.inference.InferenceJournal
 import com.ialocal.android.inference.InferenceMetrics
@@ -101,11 +102,20 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun send(raw: String) {
-        val text = raw.trim()
+        val input = parseChatInput(raw)
+        val text = input.prompt
         val snapshot = _state.value
         val model = snapshot.activeModel ?: return
         val profile = model.profile ?: return
-        if (snapshot.loading || snapshot.generating || snapshot.transfer != null || text.isBlank()) return
+        if (snapshot.loading || snapshot.generating || snapshot.transfer != null) return
+        if (input.jsonObject && profile != EngineProfile.LFM3) {
+            notice("Activa LFM3 para usar el comando /json.")
+            return
+        }
+        if (text.isBlank()) {
+            if (input.jsonObject) notice("Escribe qué datos quieres después de /json.")
+            return
+        }
         if (text.length > MAX_MESSAGE_CHARS) {
             notice("El mensaje admite hasta ${MAX_MESSAGE_CHARS} caracteres.")
             return
@@ -133,11 +143,12 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 var lastPaint = 0L
                 var lastSave = SystemClock.elapsedRealtime()
                 withContext(NonCancellable + Dispatchers.IO) {
-                    runId = journal.start(model.name, snapshot.settings, model.file.length(), threads, thermal)
+                    runId = journal.start(model.name, snapshot.settings, model.file.length(), threads, thermal, input.jsonObject)
                     _state.update { it.copy(diagnostics = journal.report()) }
                 }
                 val result = engine.generate(
-                    GenerationRequest(model.file, history, text, snapshot.settings, profile, currentTurn.chatId, threads),
+                    GenerationRequest(model.file, history, text, snapshot.settings, profile, currentTurn.chatId, threads,
+                        jsonObject = input.jsonObject),
                     onMetrics = { metrics = it },
                     onPhase = { phase ->
                         if (_state.value.inferencePhase != phase) {

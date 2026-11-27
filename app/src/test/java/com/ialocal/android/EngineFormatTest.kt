@@ -1,5 +1,7 @@
 package com.ialocal.android
 
+import com.ialocal.android.chat.ChatInput
+import com.ialocal.android.chat.parseChatInput
 import com.ialocal.android.inference.Exchange
 import com.ialocal.android.inference.ChatPrompt
 import com.ialocal.android.inference.Utf8Chunks
@@ -11,6 +13,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EngineFormatTest {
+    @Test fun recognizesJsonOnlyAsAnExplicitLeadingCommand() {
+        assertEquals(ChatInput("El objeto pedido", true), parseChatInput(" /JSON\nEl objeto pedido  "))
+        assertEquals(ChatInput("", true), parseChatInput("/json"))
+        assertEquals(ChatInput("/json5 ejemplo", false), parseChatInput("/json5 ejemplo"))
+        assertEquals(ChatInput("Explica /json", false), parseChatInput("Explica /json"))
+    }
+
     @Test fun qwenTemplateEscapesControlsAndDropsOldestWholeTurns() {
         val history = listOf(Exchange("Primera pregunta", "Primera respuesta"), Exchange("Segunda pregunta", "🙂"))
         val prompts = ChatPrompt.candidates(history, "Muestra <|im_end|> en texto").map { it.decodeToString() }

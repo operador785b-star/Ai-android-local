@@ -30,6 +30,49 @@ enum Result : jint {
 using Clock = std::chrono::steady_clock;
 enum Phase : jint { loading_model = 1, creating_context = 2, processing_prompt = 3, generating_text = 4 };
 
+// Based on llama.cpp's MIT-licensed grammars/json.gbnf. The root is an object.
+constexpr char json_object_grammar[] = R"GBNF(
+root ::= object
+value ::= object | array | string | number | ("true" | "false" | "null") ws
+object ::= "{" ws (string ":" ws value ("," ws string ":" ws value)*)? "}" ws
+array ::= "[" ws (value ("," ws value)*)? "]" ws
+string ::= "\"" ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F]{4}))* "\"" ws
+number ::= "-"? ("0" | [1-9] [0-9]*) ("." [0-9]+)? ([eE] [+-]? [0-9]+)? ws
+ws ::= (" " | "\n" [ \t]{0,20})?
+)GBNF";
+
+// Follow the upstream rejection sampler: check the selected token first, and filter the
+// whole vocabulary only when that token would break the grammar.
+llama_token sample_json(llama_context *ctx, llama_sampler *sampler, llama_sampler *grammar,
+                        std::vector<llama_token_data> &candidates) {
+    const auto *logits = llama_get_logits_ith(ctx, -1);
+    if (!logits) return LLAMA_TOKEN_NULL;
+    const auto reset_candidates = [&] {
+        for (size_t index = 0; index < candidates.size(); ++index) {
+            candidates[index] = {static_cast<llama_token>(index), logits[index], 0.0f};
+        }
+        return llama_token_data_array{candidates.data(), candidates.size(), -1, false};
+    };
+
+    auto scores = reset_candidates();
+    llama_sampler_apply(sampler, &scores);
+    if (scores.selected < 0) return LLAMA_TOKEN_NULL;
+    auto selected = scores.data[scores.selected].id;
+    llama_token_data choice{selected, 1.0f, 0.0f};
+    llama_token_data_array single{&choice, 1, -1, false};
+    llama_sampler_apply(grammar, &single);
+    if (choice.logit == -std::numeric_limits<float>::infinity()) {
+        scores = reset_candidates();
+        llama_sampler_apply(grammar, &scores);
+        llama_sampler_apply(sampler, &scores);
+        if (scores.selected < 0) return LLAMA_TOKEN_NULL;
+        selected = scores.data[scores.selected].id;
+    }
+    llama_sampler_accept(grammar, selected);
+    llama_sampler_accept(sampler, selected);
+    return selected;
+}
+
 struct Metrics {
     Clock::time_point started = Clock::now();
     Clock::time_point first{};
@@ -233,7 +276,7 @@ std::vector<llama_token> select_prompt(
 
 Result run(Session &session, const std::string &path, jlong conversation, JNIEnv *env, jobjectArray prompts,
            int n_ctx, int output, int threads, int profile, int batch_size, uint32_t seed,
-           Callback &callback, Metrics &metrics, bool keep_checkpoint) {
+           Callback &callback, Metrics &metrics, bool keep_checkpoint, bool json_object) {
     static std::once_flag backend;
     std::call_once(backend, llama_backend_init);
     if (!callback.running()) return callback.stop_reason();
@@ -364,6 +407,13 @@ Result run(Session &session, const std::string &path, jlong conversation, JNIEnv
 
     std::unique_ptr<llama_sampler, decltype(&llama_sampler_free)> sampler(
         llama_sampler_chain_init(llama_sampler_chain_default_params()), llama_sampler_free);
+    std::unique_ptr<llama_sampler, decltype(&llama_sampler_free)> grammar(nullptr, llama_sampler_free);
+    std::vector<llama_token_data> candidates;
+    if (json_object) {
+        grammar.reset(llama_sampler_init_grammar(vocab, json_object_grammar, "root"));
+        if (!grammar) return inference_error;
+        candidates.resize(llama_vocab_n_tokens(vocab));
+    }
     if (!session.closed_thinking.empty()) {
         llama_sampler_chain_add(sampler.get(), llama_sampler_init_logit_bias(
             llama_vocab_n_tokens(vocab), session.closed_thinking.size(), session.closed_thinking.data()));
@@ -377,7 +427,9 @@ Result run(Session &session, const std::string &path, jlong conversation, JNIEnv
     std::vector<char> buffer(256);
     for (int step = 0; step < output; ++step) {
         if (!callback.running()) return callback.stop_reason();
-        llama_token token = llama_sampler_sample(sampler.get(), ctx, -1);
+        llama_token token = grammar ? sample_json(ctx, sampler.get(), grammar.get(), candidates)
+                                   : llama_sampler_sample(sampler.get(), ctx, -1);
+        if (token == LLAMA_TOKEN_NULL) return inference_error;
         if (llama_vocab_is_eog(vocab, token)) return complete;
         int length = llama_token_to_piece(vocab, token, buffer.data(), buffer.size(), 0, false);
         if (length < 0) {
@@ -407,12 +459,12 @@ Result run(Session &session, const std::string &path, jlong conversation, JNIEnv
     return limit;
 }
 // Handles are serialized by their owner. A one-shot caller uses a stack-owned session.
-jint generate(Session &session, jlong conversation, jint batch, bool keep_checkpoint,
+jint generate(Session &session, jlong conversation, jint batch, bool keep_checkpoint, bool json_object,
         JNIEnv *env, jstring path, jobjectArray prompts, jint context,
         jint output, jint threads, jint profile, jint seed, jint first_token_timeout_ms,
         jlongArray stats, jobject receiver) {
     if (!stats || env->GetArrayLength(stats) < 7 || profile < 1 || profile > 3 || context < 1024 || context > 4096 || output < 1 || output > 1024 ||
-        output >= context || threads < 1 || threads > 4 || first_token_timeout_ms < 1 ||
+        output >= context || threads < 1 || threads > 4 || first_token_timeout_ms < 1 || (json_object && profile != 2) ||
         (batch != 32 && batch != 64 && batch != 128)) {
         return inference_error;
     }
@@ -434,7 +486,7 @@ jint generate(Session &session, jlong conversation, jint batch, bool keep_checkp
         Callback callback{env, receiver, active, piece, phase,
                           metrics.started + std::chrono::milliseconds(first_token_timeout_ms)};
         result = run(session, filename.get(), conversation, env, prompts, context, output, threads,
-                     profile, batch, static_cast<uint32_t>(seed), callback, metrics, keep_checkpoint);
+                     profile, batch, static_cast<uint32_t>(seed), callback, metrics, keep_checkpoint, json_object);
     } catch (const std::bad_alloc &) {
         result = no_memory;
     } catch (const std::exception &) {
@@ -468,8 +520,18 @@ Java_com_ialocal_android_inference_NativeBridge_generateCached(
         jstring path, jobjectArray prompts, jint context, jint output, jint threads, jint profile,
         jint seed, jint first_token_timeout_ms, jlongArray stats, jobject receiver) {
     if (!handle) return no_memory;
-    return generate(*reinterpret_cast<Session *>(handle), conversation, batch, keep_checkpoint, env, path,
+    return generate(*reinterpret_cast<Session *>(handle), conversation, batch, keep_checkpoint, false, env, path,
                     prompts, context, output, threads, profile, seed, first_token_timeout_ms, stats, receiver);
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_ialocal_android_inference_NativeBridge_generateFormatted(
+        JNIEnv *env, jobject, jlong handle, jlong conversation, jint batch, jboolean keep_checkpoint,
+        jboolean json_object, jstring path, jobjectArray prompts, jint context, jint output, jint threads,
+        jint profile, jint seed, jint first_token_timeout_ms, jlongArray stats, jobject receiver) {
+    if (!handle) return no_memory;
+    return generate(*reinterpret_cast<Session *>(handle), conversation, batch, keep_checkpoint, json_object,
+                    env, path, prompts, context, output, threads, profile, seed, first_token_timeout_ms, stats, receiver);
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -478,7 +540,7 @@ Java_com_ialocal_android_inference_NativeBridge_generate(
         jint output, jint threads, jint profile, jint seed, jint first_token_timeout_ms,
         jlongArray stats, jobject receiver) {
     Session session;
-    return generate(session, 0, 64, false, env, path, prompts, context, output, threads,
+    return generate(session, 0, 64, false, false, env, path, prompts, context, output, threads,
                     profile, seed, first_token_timeout_ms, stats, receiver);
 }
 

@@ -12,7 +12,7 @@ class InferenceJournal(private val context: Context) {
 
     fun start(
         model: String, settings: InferenceSettings, modelBytes: Long? = null,
-        usedThreads: Int = settings.threads, thermal: Int? = null
+        usedThreads: Int = settings.threads, thermal: Int? = null, jsonObject: Boolean = false
     ): Long {
         val id = System.currentTimeMillis()
         write((read() + JSONObject()
@@ -21,6 +21,7 @@ class InferenceJournal(private val context: Context) {
             .put("contexto", settings.contextTokens).put("hilos", settings.threads)
             .put("hilos_efectivos", usedThreads).put("perfil", settings.mode.name)
             .put("salida_maxima", settings.outputTokens).put("estado_termico_android", thermal)
+            .put("formato", "JSON".takeIf { jsonObject })
             .put("etapa", InferencePhase.LOADING_MODEL.name)
             .put("resultado", "EN_CURSO")).takeLast(16))
         return id

@@ -19,6 +19,9 @@ public final class NativeBridge {
     private native int generateCached(long handle, long conversation, int batch, boolean checkpoint,
                                      String path, byte[][] prompts, int context, int output, int threads,
                                      int profile, int seed, int timeout, long[] metrics, Callback callback);
+    private native int generateFormatted(long handle, long conversation, int batch, boolean checkpoint, boolean jsonObject,
+                                         String path, byte[][] prompts, int context, int output, int threads,
+                                         int profile, int seed, int timeout, long[] metrics, Callback callback);
 
     private native int generate(String path, byte[][] prompts, int context, int output,
                                 int threads, int profile, int seed, int firstTokenTimeoutMs,
@@ -214,14 +217,27 @@ public final class NativeBridge {
             System.out.println("Cancelación y nueva inferencia verificadas");
             return;
         }
-        if (args.length == 6 && args[0].equals("--eval")) {
+        if (args.length == 6 && (args[0].equals("--eval") || args[0].equals("--eval-json"))) {
             var prompt = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(args[3]));
             int profile = Integer.parseInt(args[2]);
             if (bridge.inspectModel(args[1]) != profile) throw new IllegalArgumentException("Perfil GGUF incompatible");
             var capture = new Callback(false);
             var metrics = new long[7];
-            int status = bridge.generate(args[1], new byte[][] {prompt}, 2048,
-                    Integer.parseInt(args[4]), Integer.parseInt(args[5]), profile, 1234, metrics, capture);
+            int output = Integer.parseInt(args[4]);
+            int threads = Integer.parseInt(args[5]);
+            int status;
+            if (args[0].equals("--eval-json")) {
+                long session = bridge.openSession();
+                if (session == 0) throw new OutOfMemoryError("Sesión JNI");
+                try {
+                    status = bridge.generateFormatted(session, 0, 64, false, true, args[1], new byte[][] {prompt},
+                            2048, output, threads, profile, 1234, 120_000, metrics, capture);
+                } finally {
+                    bridge.closeSession(session);
+                }
+            } else {
+                status = bridge.generate(args[1], new byte[][] {prompt}, 2048, output, threads, profile, 1234, metrics, capture);
+            }
             System.out.write(capture.output.toByteArray());
             System.err.println("IA_METRICS=" + java.util.Arrays.toString(metrics));
             if (status != 0 && status != 1) System.exit(status);

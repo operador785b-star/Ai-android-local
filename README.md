@@ -1,22 +1,23 @@
 # IA Local Android
 
-Es una app para usar modelos de IA localmente. La versión 0.4.4 ofrece chat en español con una interfaz de cristal violeta y azul y está diseñada para el Redmi Note 14 Pro 4G con 8 GB de RAM. Usa Kotlin, Jetpack Compose, SQLite y llama.cpp sobre CPU ARM64.
+Es una app para usar modelos de IA localmente. La versión 0.4.5 ofrece chat en español con una interfaz de cristal violeta y azul y está diseñada para el Redmi Note 14 Pro 4G con 8 GB de RAM. Usa Kotlin, Jetpack Compose, SQLite y llama.cpp sobre CPU ARM64.
 
 ## Instalar desde el celular
 
-1. Descarga la vista previa de la 0.4.4 en ZIP y extráela con **Archivos**. [ZIP de vista previa 0.4.4](https://raw.githubusercontent.com/operador785b-star/Ai-android-local/descargas-apk/IA-Local-Android-0.4.4-vista-previa.zip)
+1. Descarga la vista previa de la 0.4.5 en ZIP y extráela con **Archivos**. [ZIP de vista previa 0.4.5](https://raw.githubusercontent.com/operador785b-star/Ai-android-local/descargas-apk/IA-Local-Android-0.4.5-vista-previa.zip)
 2. Abre el APK. Si HyperOS lo solicita, habilita **Instalar aplicaciones desconocidas** para la aplicación que abrió el archivo y confirma la instalación. El APK de prueba requiere Android 9 o posterior y ARM64.
 3. Abre **IA Local Android → Configurar modelo → Descargar Liquid AI LFM3-1.7B**. El archivo pesa **1,10 GB**. La aplicación lo verifica, lo guarda en su almacenamiento privado y lo activa. Espera a que aparezca **En uso**.
-4. Vuelve al chat y escribe «Responde solo con la palabra hola». La pregunta y la respuesta quedan en el historial. Con el modelo instalado puedes repetir la prueba en modo avión con Wi-Fi apagada.
+4. Vuelve al chat y escribe «Hola». La pregunta y la respuesta quedan en el historial. Con el modelo instalado puedes repetir la prueba en modo avión con Wi-Fi apagada.
 5. Cierra y vuelve a abrir la aplicación. Abre **Historial** para comprobar que la conversación siga disponible.
 
-El APK estándar mantiene el identificador `com.ialocal.android` y el historial de SQLite. Android exige la misma firma para actualizar una instalación existente. La vista previa 0.4.4 usa un identificador propio y puede instalarse junto a la app estándar y a las vistas previas anteriores. Su historial y sus modelos se guardan en un espacio independiente.
+El APK estándar mantiene el identificador `com.ialocal.android` y el historial de SQLite. Android exige la misma firma para actualizar una instalación existente. La vista previa 0.4.5 usa un identificador propio y puede instalarse junto a la app estándar y a las vistas previas anteriores. Su historial y sus modelos se guardan en un espacio independiente.
 
 ## Uso
 
 - En **Ajustes → Apariencia** puedes elegir tema claro, oscuro o del sistema y reducir animaciones.
 - **Historial** incluye un buscador por título que admite palabras sin tilde.
 - El botón junto al mensaje cambia a **Detener** mientras se genera la respuesta. El historial conserva la parte ya recibida.
+- Con **LFM3 activo**, escribe `/json` al inicio de un mensaje para pedir un objeto JSON sin Markdown. Por ejemplo, envía `/json Devuelve las claves ciudad con valor Lima y dias con el entero 3`. Indica los datos que necesitas y espera a que termine la respuesta. Si la detienes o llega al límite de salida, puede quedar incompleta. La restricción controla la sintaxis y LFM3 sigue eligiendo las claves y los valores.
 - Los bloques de código tienen desplazamiento horizontal y un botón para copiar. La aplicación muestra el código como texto.
 - **Ajustes → Memoria y contexto** ofrece Económico, Equilibrado y Máximo rendimiento, además de los ajustes manuales de contexto, salida e hilos. La configuración inicial es Equilibrado, con 2.048 tokens de contexto, hasta 512 de respuesta y dos hilos.
 - **Modelos locales → Importar GGUF** sirve para un modelo que ya tengas como archivo `.gguf` compatible. Si viene en ZIP, extráelo a **Descargas** y elige el `.gguf`. El nombre es opcional. La app comprueba la estructura y calcula la huella durante la copia para reconocer duplicados. La descarga de LFM3 desde el catálogo queda lista para chatear sin pasar por el selector de archivos.
@@ -37,6 +38,7 @@ El APK se genera en `app/build/outputs/apk/debug/app-debug.apk`. Con un Android 
 
 - [Fase de inferencia y banco en español](docs/fase-inferencia.md)
 - [Rendimiento de la 0.4.3 y pruebas en el Redmi](docs/rendimiento-android.md)
+- [Pruebas del modo JSON de LFM3](docs/lfm3-json.md)
 - [Auditoría original de LFM3 y Nanbeige en la 0.3](docs/candidatos-gguf.md)
 - [Rediseño y capturas](docs/diseno-liquid-glass.md)
 - [Arquitectura y licencias](docs/arquitectura.md)
