@@ -1,10 +1,13 @@
 package com.ialocal.android.inference
 
+import android.app.ActivityManager
+import android.app.ApplicationExitInfo
 import android.content.Context
+import android.os.Build
 import org.json.JSONArray
 import org.json.JSONObject
 
-class InferenceJournal(context: Context) {
+class InferenceJournal(private val context: Context) {
     private val prefs = context.getSharedPreferences("inference-journal", Context.MODE_PRIVATE)
 
     fun start(model: String, settings: InferenceSettings, modelBytes: Long? = null): Long {
@@ -46,7 +49,30 @@ class InferenceJournal(context: Context) {
         val entries = read()
         val pending = entries.filter { it.optString("resultado") == "EN_CURSO" }
         if (pending.isNotEmpty()) {
-            pending.forEach { it.put("resultado", "INTERRUMPIDA") }
+            val lastExit = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                runCatching {
+                    context.getSystemService(ActivityManager::class.java)
+                        ?.getHistoricalProcessExitReasons(null, 0, 8)
+                        ?.firstOrNull { it.processName == context.packageName }
+                }.getOrNull()
+            } else null
+            for (record in pending) {
+                record.put("resultado", "INTERRUMPIDA")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                    lastExit != null && lastExit.timestamp >= record.optLong("id")) {
+                    record.put("codigo_salida_android", lastExit.reason)
+                    val reason = when (lastExit.reason) {
+                        ApplicationExitInfo.REASON_LOW_MEMORY -> "MEMORIA_INSUFICIENTE"
+                        ApplicationExitInfo.REASON_CRASH -> "FALLO_DE_APLICACION"
+                        ApplicationExitInfo.REASON_CRASH_NATIVE -> "FALLO_NATIVO"
+                        ApplicationExitInfo.REASON_ANR -> "APLICACION_SIN_RESPUESTA"
+                        ApplicationExitInfo.REASON_USER_REQUESTED -> "CIERRE_SOLICITADO"
+                        ApplicationExitInfo.REASON_SIGNALED -> "PROCESO_TERMINADO_POR_SEÑAL"
+                        else -> "OTRO"
+                    }
+                    record.put("motivo_salida_android", reason)
+                }
+            }
             write(entries)
         }
     }
