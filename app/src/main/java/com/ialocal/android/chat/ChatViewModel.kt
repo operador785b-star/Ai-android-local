@@ -216,8 +216,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         models.download(sha256, it)
     }
 
-    fun importModel(uri: Uri, name: String, hash: String) = startTransfer("Importando modelo") {
-        models.import(uri, name, hash, it)
+    fun importModel(uri: Uri, name: String) = startTransfer("Importando modelo") {
+        models.import(uri, name, it)
     }
 
     private fun startTransfer(

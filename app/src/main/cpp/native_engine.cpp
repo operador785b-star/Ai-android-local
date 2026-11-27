@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <sys/resource.h>
+#include <sys/stat.h>
 #include <cstring>
 #include <limits>
 #include <memory>
@@ -224,7 +225,18 @@ Java_com_ialocal_android_inference_NativeBridge_inspectModel(JNIEnv *env, jobjec
     try {
         std::unique_ptr<gguf_context, decltype(&gguf_free)> model(
             gguf_init_from_file(filename.get(), {true, nullptr}), gguf_free);
-        if (!model || gguf_get_n_tensors(model.get()) == 0) return 0;
+        if (!model) return 0;
+        const auto count = gguf_get_n_tensors(model.get());
+        if (count == 0) return 0;
+        struct stat file_info{};
+        if (stat(filename.get(), &file_info) != 0 || file_info.st_size < 0) return 0;
+        auto remaining = static_cast<uint64_t>(file_info.st_size);
+        const auto data_offset = gguf_get_data_offset(model.get());
+        if (data_offset > remaining) return 0;
+        remaining -= data_offset;
+        // The GGUF parser checks that tensor offsets are contiguous and aligned.
+        const auto last_offset = gguf_get_tensor_offset(model.get(), count - 1);
+        if (last_offset > remaining || gguf_get_tensor_size(model.get(), count - 1) > remaining - last_offset) return 0;
         const auto arch = gguf_find_key(model.get(), "general.architecture");
         if (arch < 0 || gguf_get_kv_type(model.get(), arch) != GGUF_TYPE_STRING) return 0;
         const int profile = profile_from_architecture(gguf_get_val_str(model.get(), arch));

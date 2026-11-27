@@ -3,26 +3,18 @@ package com.ialocal.android.model
 import java.io.InputStream
 import java.io.OutputStream
 import java.security.MessageDigest
-import java.util.Locale
 
 class ModelException(message: String) : Exception(message)
 
 internal object GgufTransfer {
     const val MAX_BYTES = 6L * 1024 * 1024 * 1024
-    private val shaPattern = Regex("[a-f0-9]{64}")
-
-    fun normalizedHash(input: String): String = input.trim().lowercase(Locale.ROOT).also {
-        if (!shaPattern.matches(it)) throw ModelException("Introduce un SHA-256 de 64 dígitos hexadecimales.")
-    }
-
-    fun copyVerified(
+    fun copyAndCheck(
         source: InputStream,
         target: OutputStream,
-        hash: String,
+        expectedHash: String?,
         expectedBytes: Long?,
         onProgress: (Long) -> Unit
-    ) {
-        val expectedHash = normalizedHash(hash)
+    ): String {
         val header = ByteArray(4)
         var headerOffset = 0
         while (headerOffset < header.size) {
@@ -54,6 +46,9 @@ internal object GgufTransfer {
         val actual = digest.digest().joinToString("") {
             (it.toInt() and 0xff).toString(16).padStart(2, '0')
         }
-        if (actual != expectedHash) throw ModelException("El SHA-256 no coincide. El archivo se descartó.")
+        if (expectedHash != null && !actual.equals(expectedHash, ignoreCase = true)) {
+            throw ModelException("El SHA-256 no coincide. El archivo se descartó.")
+        }
+        return actual
     }
 }

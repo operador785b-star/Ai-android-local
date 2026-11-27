@@ -64,7 +64,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ialocal.android.R
@@ -84,7 +83,7 @@ internal fun ModelScreen(
     state: ChatUiState,
     modifier: Modifier,
     onDownload: (String) -> Unit,
-    onImport: (String, String) -> Unit,
+    onImport: (String) -> Unit,
     onActivate: (String) -> Unit,
     onDelete: (InstalledModel) -> Unit,
     onCancel: () -> Unit
@@ -169,7 +168,7 @@ internal fun ModelScreen(
                 }
             }
             item {
-                PreferenceCard("Importar modelo", "Archivo GGUF y suma SHA-256", Icons.Default.Add) {
+                PreferenceCard("Importar modelo", "Archivo GGUF local", Icons.Default.Add) {
                     GlassButton({ importDialog = true }, Modifier.fillMaxWidth(), primary = false, enabled = canChange) {
                         Text("Importar GGUF")
                     }
@@ -192,27 +191,17 @@ internal fun ModelScreen(
 
     if (importDialog) {
         var name by rememberSaveable { mutableStateOf("") }
-        var hash by rememberSaveable { mutableStateOf("") }
-        val valid = hash.trim().matches(Regex("[a-fA-F0-9]{64}"))
         AlertDialog(
             onDismissRequest = { importDialog = false },
-            title = { Text("Importar modelo verificado") },
+            title = { Text("Importar modelo GGUF") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Pega la suma SHA-256 publicada por quien te proporcionó el archivo.")
-                    OutlinedTextField(name, { if (it.length <= 52) name = it },
-                        label = { Text("Nombre (opcional)") }, singleLine = true)
-                    OutlinedTextField(
-                        hash, { if (it.trim().length <= 64) hash = it },
-                        label = { Text("SHA-256") }, singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
-                    )
-                }
+                OutlinedTextField(name, { if (it.length <= 52) name = it },
+                    label = { Text("Nombre (opcional)") }, singleLine = true)
             },
             dismissButton = { TextButton(onClick = { importDialog = false }) { Text("Cancelar") } },
             confirmButton = {
-                TextButton(enabled = valid, onClick = {
-                    onImport(name, hash)
+                TextButton(onClick = {
+                    onImport(name)
                     importDialog = false
                 }) { Text("Elegir archivo") }
             }

@@ -4,7 +4,7 @@
 
 Se fijó llama.cpp v1.1.0, revisión `171527522610996f5f0acf12334e185156ca8f44`. Nanbeige entró en la rama oficial con el PR 25994 y LFM3 con el PR 31252. El paso del motor incluye perfiles de conversación distintos, memoria mapeada y prevalidación del GGUF. Los pesos se descargan por separado y el APK permanece sin GGUF. [Nanbeige en llama.cpp](https://github.com/ggml-org/llama.cpp/pull/25994) · [LFM3 en llama.cpp](https://github.com/ggml-org/llama.cpp/pull/31252) · [Motor fijado](https://github.com/ggml-org/llama.cpp/tree/171527522610996f5f0acf12334e185156ca8f44)
 
-El administrador conserva el archivo parcial hasta cerrar la copia, comprobar tamaño y SHA-256 e identificar el perfil. Solo entonces publica el archivo por renombrado atómico. El motor vuelve a comprobar la arquitectura al cargar. La selección y la eliminación se bloquean durante la generación o una transferencia.
+El administrador conserva el archivo parcial hasta cerrar la copia e identificar el perfil. En las descargas del catálogo, compara el tamaño y el SHA-256 con los valores publicados. En las importaciones a partir de la 0.4.1, la huella calculada sirve para identificar el archivo y reconocer duplicados. El motor comprueba la estructura y la extensión de los tensores antes de que el administrador publique el archivo por renombrado atómico. La selección y la eliminación se bloquean durante la generación o una transferencia.
 
 ## Banco reproducible
 
