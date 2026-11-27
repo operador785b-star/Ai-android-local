@@ -1,0 +1,56 @@
+{
+  "profile": "lfm3",
+  "sha256": "3793e1e6e2266919d6e015287221b41100175a98eddaba92e111aed3b05c93c4",
+  "seed": 1234,
+  "context": 2048,
+  "threads": 2,
+  "suite_sha256": "d0ef98be6569c85e124b5476d9652c272267cd9fe3084edfa8a7d496a62f0d54",
+  "system_sha256": "1ae4217c5e57c1bb89c58a6bb5c31fd74e4ef417e05aed217d66477ba18b6b08",
+  "json_object": true,
+  "passed": 2,
+  "total": 2,
+  "results": [
+    {
+      "id": "tabla-anidada",
+      "category": "json",
+      "passed": true,
+      "answer": "{\n  \"filas\": [\n    {\n      \"producto\": \"pan\",\n      \"unidades\": 2\n    },\n    {\n      \"producto\": \"arroz\",\n      \"unidades\": 5\n    }\n  ]\n}",
+      "metrics": {
+        "tokens_entrada": 132,
+        "tokens_salida": 51,
+        "total_ms": 5758,
+        "primer_fragmento_ms": 3781,
+        "decodificacion_ms": 1939,
+        "pico_rss_proceso_kib": 1928140,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 25.79
+      },
+      "error": null,
+      "json_checks": {
+        "format": true,
+        "values": true
+      }
+    },
+    {
+      "id": "comillas-y-numero",
+      "category": "json",
+      "passed": true,
+      "answer": "{\n  \"texto\": \"El cartel dice \\\"sí\\\".\",\n  \"temperatura\": -1.25\n}\n",
+      "metrics": {
+        "tokens_entrada": 135,
+        "tokens_salida": 27,
+        "total_ms": 4240,
+        "primer_fragmento_ms": 3190,
+        "decodificacion_ms": 996,
+        "pico_rss_proceso_kib": 1941940,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 26.1
+      },
+      "error": null,
+      "json_checks": {
+        "format": true,
+        "values": true
+      }
+    }
+  ]
+}

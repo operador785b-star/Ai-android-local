@@ -24,3 +24,13 @@ unshare -Urn -- python3 evaluation/run.py lfm3 /modelos/LFM3.gguf /build/045 /tm
 ```
 
 La rúbrica registra por separado la sintaxis con las claves y tipos pedidos, la exactitud de los valores y la aprobación de todo el caso. La prueba usa un contexto de 2.048, dos hilos y semilla 1234. Las métricas del host describen Linux x86-64. El tiempo de respuesta en el Redmi se mide aparte.
+
+## Resultados verificados
+
+| Configuración | JSON con las claves y tipos pedidos | Problemas matemáticos con valores correctos | Banco completo | Mediana de emisión en los seis casos JSON |
+| --- | ---: | ---: | ---: | ---: |
+| Chat normal 0.4.4 | 2/6 | 1/4 | 4/8 | 21,59 tokens/s |
+| Prototipo con filtro completo en cada token | 6/6 | 1/4 | 5/8 | 17,66 tokens/s |
+| Modo `/json` de la 0.4.5 | 6/6 | 1/4 | 5/8 | 21,17 tokens/s |
+
+La ecuación era correcta antes del cambio. El modo JSON quitó el delimitador adicional de Markdown y permitió aprobar el caso completo. Los dos controles nuevos entregaron los valores esperados, una lista de objetos y una cadena con comillas escapadas y un número negativo. En otra prueba JNI se generó un objeto completo, se volvió al chat normal en la misma sesión y se comprobó que una salida cortada se marca como limitada. [Salidas y métricas originales](../evaluation/results/lfm3-json-045)
