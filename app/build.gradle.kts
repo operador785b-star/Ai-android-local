@@ -72,7 +72,13 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
+val robolectricRepository = if (providers.environmentVariable("GITHUB_ACTIONS").orNull == "true") {
+    "https://maven-central.storage-download.googleapis.com/maven2"
+} else {
+    "https://repo.maven.apache.org/maven2"
+}
+
 tasks.withType<Test>().configureEach {
-    systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
+    systemProperty("robolectric.dependency.repo.url", robolectricRepository)
     systemProperty("ia.preview.directory", layout.buildDirectory.dir("previews").get().asFile.absolutePath)
 }
