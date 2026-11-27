@@ -4,13 +4,13 @@ Es una app para usar modelos de IA localmente. La versión 0.4.2 ofrece chat en 
 
 ## Instalar desde el celular
 
-1. Descarga **IA-Local-Android.apk**. Si lo obtienes de GitHub Actions, abre el flujo **APK Android**, elige una ejecución verde y descarga el artefacto **IA-Local-Android-ARM64**. Inicia sesión en GitHub y extrae el ZIP desde la app Archivos.
+1. Descarga el **APK estándar** para la primera instalación o el **APK de vista previa** para probarlo junto a una versión anterior. [APK estándar 0.4.2](https://github.com/operador785b-star/Ai-android-local/releases/download/v0.4.2/IA-Local-Android.apk) · [APK de vista previa 0.4.2](https://github.com/operador785b-star/Ai-android-local/releases/download/v0.4.2/IA-Local-Android-vista-previa.apk)
 2. Abre el APK. Si HyperOS lo solicita, habilita **Instalar aplicaciones desconocidas** para la aplicación que abrió el archivo y confirma la instalación. El APK de prueba requiere Android 9 o posterior y ARM64.
 3. Abre **IA Local Android → Configurar modelo → Descargar Qwen3.5-2B**. Deja la aplicación abierta hasta que termine la verificación. El archivo pesa **1,28 GB**.
 4. Vuelve al chat. Activa modo avión y comprueba que la Wi-Fi también esté apagada. Escribe «¿Cuánto es 6 × 7?» y luego «Escribe una función Python que devuelva el doble de un número».
 5. Cierra y vuelve a abrir la aplicación. Abre **Historial** para comprobar que la conversación siga disponible.
 
-El APK estándar mantiene el identificador `com.ialocal.android` y el historial de SQLite. Android exige la misma firma para actualizar una instalación existente. Si ya tienes una versión firmada para pruebas, descarga **IA-Local-Android-vista-previa-ARM64**. El APK 0.4.2 usa un identificador de vista previa propio y puede instalarse junto a la app estándar y a las vistas previas anteriores. Su historial y sus modelos se guardan en un espacio independiente. Para instalar por primera vez usa el APK estándar.
+El APK estándar mantiene el identificador `com.ialocal.android` y el historial de SQLite. Android exige la misma firma para actualizar una instalación existente. El APK de vista previa 0.4.2 usa un identificador propio y puede instalarse junto a la app estándar y a las vistas previas anteriores. Su historial y sus modelos se guardan en un espacio independiente.
 
 ## Uso
 
