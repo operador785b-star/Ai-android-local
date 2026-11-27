@@ -40,6 +40,8 @@ public final class NativeBridge {
         boolean cancelDuringPrefill;
         int prefillChecks;
         int fragments;
+        long firstPieceNs;
+        long lastPieceNs;
 
         Callback(boolean stopAfterFirstPiece) { this.stopAfterFirstPiece = stopAfterFirstPiece; }
         public boolean isActive() {
@@ -48,7 +50,12 @@ public final class NativeBridge {
             }
             return !stopAfterFirstPiece || fragments == 0;
         }
-        public void onBytes(byte[] bytes) { output.writeBytes(bytes); fragments++; }
+        public void onBytes(byte[] bytes) {
+            lastPieceNs = System.nanoTime();
+            if (fragments == 0) firstPieceNs = lastPieceNs;
+            output.writeBytes(bytes);
+            fragments++;
+        }
         public void onPhase(int phase) { phases.add(phase); }
     }
 
@@ -68,6 +75,7 @@ public final class NativeBridge {
         if (inspectModel(model) != profile) throw new IllegalArgumentException("Perfil GGUF incompatible");
         if (!List.of("baseline", "cold", "warm").contains(mode)) throw new IllegalArgumentException(mode);
         long session = mode.equals("warm") ? openSession() : 0;
+        if (mode.equals("warm") && session == 0) throw new OutOfMemoryError("Sesión JNI");
         try {
             for (String line : Files.readAllLines(Path.of(args[7]))) {
                 String[] fields = line.split("\t");
@@ -75,7 +83,7 @@ public final class NativeBridge {
                 int maxTokens = Integer.parseInt(fields[1]);
                 byte[][] prompts = { Files.readAllBytes(Path.of(fields[2])) };
                 var callback = new Callback(false);
-                long[] metrics = new long[mode.equals("baseline") ? 8 : 18];
+                long[] metrics = new long[mode.equals("baseline") ? 8 : 19];
                 int code;
                 if (mode.equals("baseline")) {
                     code = generate(model, prompts, context, maxTokens, threads, profile, 1234, metrics, callback);
@@ -89,10 +97,60 @@ public final class NativeBridge {
                     }
                 }
                 String answer = Base64.getEncoder().encodeToString(callback.output.toByteArray());
-                System.out.printf("IA_RESULT\t%d\t%s\t%s%n", code, Arrays.toString(metrics), answer);
+                System.out.printf("IA_RESULT\t%d\t%s\t%d\t%d\t%s%n", code, Arrays.toString(metrics),
+                        callback.fragments, (callback.lastPieceNs - callback.firstPieceNs) / 1000, answer);
             }
         } finally {
             if (session != 0) closeSession(session);
+        }
+    }
+
+    private void checkCache(String[] args) throws Exception {
+        String file = args[1];
+        int profile = Integer.parseInt(args[2]);
+        byte[][] first = { Files.readAllBytes(Path.of(args[3])) };
+        byte[][] next = { Files.readAllBytes(Path.of(args[4])) };
+        long session = openSession();
+        if (session == 0) throw new OutOfMemoryError("Sesión JNI");
+        long[] metrics = new long[19];
+        try {
+            var cold = new Callback(false);
+            int reference = generate(file, next, 2048, 16, 2, profile, 1234, metrics, cold);
+            var start = new Callback(false);
+            int started = generateCached(session, 100, 64, true, file, first, 2048, 16, 2,
+                    profile, 1234, 120_000, metrics, start);
+            if (started > 1 || metrics[14] != 0 || start.fragments == 0) throw new AssertionError("Sesión fría incompleta");
+            long originalPrompt = metrics[0];
+            var resumed = new Callback(false);
+            int warm = generateCached(session, 100, 64, true, file, next, 2048, 16, 2,
+                    profile, 1234, 120_000, metrics, resumed);
+            if (reference > 1 || warm > 1 || metrics[12] <= 0 || metrics[12] >= originalPrompt ||
+                    !Arrays.equals(cold.output.toByteArray(), resumed.output.toByteArray())) {
+                throw new AssertionError("Restauración de prefijo incorrecta: " + Arrays.toString(metrics));
+            }
+            System.out.println("Prefijo restaurado: " + metrics[12] + " tokens");
+
+            for (long chat = 101; chat <= 108; chat++) {
+                var turn = new Callback(false);
+                int code = generateCached(session, chat, 64, true, file, next, 2048, 16, 2,
+                        profile, 1234, 120_000, metrics, turn);
+                if (code > 1 || metrics[12] != 0 || metrics[14] != 1 || metrics[15] != 1 ||
+                        !Arrays.equals(cold.output.toByteArray(), turn.output.toByteArray())) {
+                    throw new AssertionError("Cambio de chat incorrecto: " + Arrays.toString(metrics));
+                }
+            }
+            int stopped = generateCached(session, 108, 64, true, file, next, 2048, 16, 2,
+                    profile, 1234, 120_000, metrics, new Callback(true));
+            var recovered = new Callback(false);
+            int code = generateCached(session, 108, 64, true, file, next, 2048, 16, 2,
+                    profile, 1234, 120_000, metrics, recovered);
+            if (stopped != 2 || code > 1 || metrics[12] != 0 || metrics[14] != 1 || metrics[15] != 0 ||
+                    !Arrays.equals(cold.output.toByteArray(), recovered.output.toByteArray())) {
+                throw new AssertionError("Recuperación tras detener incorrecta: " + Arrays.toString(metrics));
+            }
+            System.out.println("Ocho cambios de chat, cancelación y nueva respuesta verificados");
+        } finally {
+            closeSession(session);
         }
     }
 
@@ -100,6 +158,10 @@ public final class NativeBridge {
         NativeBridge bridge = new NativeBridge();
         if (args.length == 8 && args[0].equals("--series")) {
             bridge.series(args);
+            return;
+        }
+        if (args.length == 5 && args[0].equals("--cache-check")) {
+            bridge.checkCache(args);
             return;
         }
         if (args.length != 0 && args[0].equals("--inspect")) {

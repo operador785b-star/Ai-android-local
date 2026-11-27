@@ -251,6 +251,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         transfer = viewModelScope.launch {
             var installedModel: InstalledModel? = null
             try {
+                engine.release()
                 installedModel = work { bytes, total ->
                     _state.update { it.copy(transfer = TransferProgress(label, bytes, total)) }
                 }

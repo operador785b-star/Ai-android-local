@@ -64,20 +64,21 @@ data class InferenceMetrics(
     val modelReused: Boolean,
     val contextReused: Boolean,
     val processRssKiB: Long,
-    val armFeatures: Long
+    val armFeatures: Long,
+    val emittedPieces: Long
 ) {
     val tokensPerSecond: Double?
-        get() = if (outputTokens > 1 && decodeMs > 0) (outputTokens - 1) * 1000.0 / decodeMs else null
+        get() = if (emittedPieces > 1 && decodeMs > 0) (emittedPieces - 1) * 1000.0 / decodeMs else null
     val promptTokensPerSecond: Double?
         get() = if (evaluatedPromptTokens > 0 && promptMs > 0) evaluatedPromptTokens * 1000.0 / promptMs else null
 
     companion object {
-        internal const val FIELD_COUNT = 18
+        internal const val FIELD_COUNT = 19
 
         internal fun read(raw: LongArray) = InferenceMetrics(
             raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], raw[6], raw[7],
             raw[8], raw[9], raw[10], raw[11], raw[12], raw[13], raw[14] != 0L,
-            raw[15] != 0L, raw[16], raw[17]
+            raw[15] != 0L, raw[16], raw[17], raw[18]
         )
     }
 }

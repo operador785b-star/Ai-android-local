@@ -41,6 +41,7 @@ class InferenceJournal(private val context: Context) {
         if (metrics != null) {
             record.put("tokens_entrada", metrics.promptTokens)
                 .put("tokens_salida", metrics.outputTokens)
+                .put("fragmentos_emitidos", metrics.emittedPieces)
                 .put("total_ms", metrics.totalMs)
                 .put("primer_fragmento_ms", metrics.firstPieceMs.takeIf { it >= 0 } ?: JSONObject.NULL)
                 .put("pico_rss_proceso_kib", metrics.processPeakRssKiB)

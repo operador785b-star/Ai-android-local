@@ -14,7 +14,7 @@ from run import METRICS, PROFILES, chat_prompt, verify
 EXTRA_METRICS = (
     "contexto_motor", "carga_modelo_ms", "creacion_contexto_ms", "tokenizacion_ms", "procesamiento_prompt_ms",
     "tokens_prompt_reutilizados", "tokens_prompt_evaluados", "modelo_reutilizado",
-    "contexto_reutilizado", "rss_proceso_kib", "capacidades_arm64",
+    "contexto_reutilizado", "rss_proceso_kib", "capacidades_arm64", "fragmentos_emitidos",
 )
 
 
@@ -27,12 +27,18 @@ def measure(args, cases, mode, build, manifest):
     if call.returncode:
         raise RuntimeError(f"{mode} terminó con código {call.returncode}\n{call.stderr[-5000:]}")
 
-    rows = [line.split("\t", 3)[1:] for line in call.stdout.splitlines() if line.startswith("IA_RESULT\t")]
+    rows = [line.split("\t", 5)[1:] for line in call.stdout.splitlines() if line.startswith("IA_RESULT\t")]
     results = []
-    for case, (code, raw, encoded) in zip(cases, rows, strict=True):
+    for case, (code, raw, pieces, stream_us, encoded) in zip(cases, rows, strict=True):
         answer = base64.b64decode(encoded, validate=True).decode("utf-8", errors="replace")
         prefix = METRICS + EXTRA_METRICS[:1] if mode == "baseline" else METRICS + EXTRA_METRICS
         metrics = dict(zip(prefix, json.loads(raw), strict=True))
+        fragments, stream_time = int(pieces), int(stream_us)
+        metrics["emision_primero_a_ultimo_us"] = stream_time
+        metrics["fragmentos_callback"] = fragments
+        metrics["fragmentos_por_segundo"] = (
+            round((fragments - 1) * 1_000_000 / stream_time, 3) if fragments > 1 and stream_time > 0 else None
+        )
         if mode != "baseline" and int(code) in (0, 1):
             total = metrics["tokens_prompt_reutilizados"] + metrics["tokens_prompt_evaluados"]
             if total != metrics["tokens_entrada"]:

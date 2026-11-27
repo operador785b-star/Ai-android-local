@@ -32,6 +32,7 @@ enum Phase : jint { loading_model = 1, creating_context = 2, processing_prompt =
 struct Metrics {
     Clock::time_point started = Clock::now();
     Clock::time_point first{};
+    Clock::time_point last{};
     jlong prompt = 0;
     jlong output = 0;
     jlong context = 0;
@@ -43,6 +44,7 @@ struct Metrics {
     jlong evaluated = 0;
     jlong model_reused = 0;
     jlong context_reused = 0;
+    jlong emitted_pieces = 0;
 
     void write(JNIEnv *env, jlongArray target, Result result) const {
         if (env->ExceptionCheck()) return;
@@ -69,9 +71,9 @@ struct Metrics {
         if (hwcap & HWCAP_ASIMDHP) arm_features |= 4;
 #endif
         const jlong values[] = {prompt, output, ms(now - started),
-            emitted ? ms(first - started) : -1, emitted ? ms(now - first) : 0, rss, result, context,
+            emitted ? ms(first - started) : -1, emitted ? ms(last - first) : 0, rss, result, context,
             load_ms, context_ms, tokenize_ms, prefill_ms, reused, evaluated, model_reused, context_reused,
-            current_rss, arm_features};
+            current_rss, arm_features, emitted_pieces};
         env->SetLongArrayRegion(target, 0, std::min<jsize>(env->GetArrayLength(target), std::size(values)), values);
     }
 };
@@ -379,10 +381,12 @@ Result run(Session &session, const std::string &path, jlong conversation, JNIEnv
         if (length > 0) {
             if (metrics.first == Clock::time_point{}) {
                 if (!callback.running()) return callback.stop_reason();
-                metrics.first = Clock::now();
                 callback.deadline = Clock::time_point::max();
                 callback.report(generating_text);
+                metrics.first = Clock::now();
             }
+            metrics.last = Clock::now();
+            ++metrics.emitted_pieces;
             if (!callback.emit(buffer.data(), length)) return inference_error;
         }
         if (step + 1 < output) {
