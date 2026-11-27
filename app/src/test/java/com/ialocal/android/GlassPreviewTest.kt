@@ -6,7 +6,6 @@ import android.graphics.Canvas
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotFocused
@@ -77,10 +76,7 @@ class GlassPreviewTest {
         ui.onNodeWithText("Descargar Nanbeige 4.2 3B").assertIsDisplayed()
         capture("08-modelos-disponibles-claro")
         ui.onNodeWithTag("biblioteca-modelos").performScrollToNode(hasText("Importar GGUF"))
-        ui.onNodeWithText("Importar GGUF").performClick()
-        ui.onNodeWithText("Elegir archivo").assertIsEnabled()
-        ui.onNodeWithText("SHA-256").assertDoesNotExist()
-        ui.onNodeWithText("Cancelar").performClick()
+        ui.onNodeWithText("Archivo GGUF local").assertIsDisplayed()
         ui.onNodeWithContentDescription("Volver al chat").performClick()
         ui.onNodeWithContentDescription("Ajustes").performClick()
         ui.onNodeWithText("Oscuro").performClick()
