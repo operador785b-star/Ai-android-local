@@ -39,6 +39,22 @@ public final class NativeBridge {
             }
             return;
         }
+        if (args.length == 3 && args[0].equals("--stability")) {
+            int profile = Integer.parseInt(args[2]);
+            if (bridge.inspectModel(args[1]) != profile) throw new IllegalArgumentException("Perfil GGUF incompatible");
+            String prefix = profile == 2 ? "<think></think>" : "<think>\n\n</think>\n\n";
+            byte[][] prompts = { ("<|im_start|>user\nEscribe tres palabras en español.<|im_end|>\n"
+                    + "<|im_start|>assistant\n" + prefix).getBytes(StandardCharsets.UTF_8) };
+            long[] metrics = new long[7];
+            var cancelled = new Callback(true);
+            int stopped = bridge.generate(args[1], prompts, 2048, 40, 2, profile, 1234, metrics, cancelled);
+            if (stopped != 2 || cancelled.fragments != 1) throw new AssertionError("Falló cancelación " + stopped);
+            var resumed = new Callback(false);
+            int second = bridge.generate(args[1], prompts, 2048, 40, 2, profile, 1234, metrics, resumed);
+            if ((second != 0 && second != 1) || resumed.fragments < 1) throw new AssertionError("Falló reinicio " + second);
+            System.out.println("Cancelación y nueva inferencia verificadas");
+            return;
+        }
         if (args.length == 6 && args[0].equals("--eval")) {
             var prompt = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(args[3]));
             int profile = Integer.parseInt(args[2]);

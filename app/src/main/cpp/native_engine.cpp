@@ -98,6 +98,8 @@ Result run(JNIEnv *env, jstring path, jobjectArray prompts, int n_ctx, int outpu
     auto model_params = llama_model_default_params();
     model_params.n_gpu_layers = 0;
     model_params.load_mode = LLAMA_LOAD_MODE_MMAP;
+    // Keep Nanbeige's larger weights mapped without a second repacked CPU buffer.
+    model_params.use_extra_bufts = profile != 3;
     model_params.progress_callback = [](float, void *data) {
         return static_cast<const Callback *>(data)->running();
     };

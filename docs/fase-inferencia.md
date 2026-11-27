@@ -30,6 +30,8 @@ El dataset inicial [fase1-es.jsonl](../training/fase1-es.jsonl) es un conjunto d
 - **LFM3**. Liquid AI documenta el ajuste con TRL. Primero hay que fijar Transformers y las implementaciones del modelo, comprobar que PEFT identifica las capas lineales elegidas y ensayar la fusión y la conversión de esas capas. QLoRA requiere además una prueba de carga, cálculo de gradiente y fusión sobre pesos originales. [Modelo y ajuste LFM3](https://huggingface.co/LiquidAI/LFM3-1.7B)
 - **Nanbeige 4.2**. La ficha oficial documenta Transformers 4.45.1 y código de modelo propio. La arquitectura repite capas y la conversión GGUF conserva el número de vueltas. Para LoRA y QLoRA quedan por validar los módulos objetivo, la cuantización en GPU y la fusión sin cambiar esa semántica. [Modelo Nanbeige](https://huggingface.co/Nanbeige/Nanbeige4.2-3B) · [Conversor fijado](https://github.com/ggml-org/llama.cpp/blob/171527522610996f5f0acf12334e185156ca8f44/conversion/nanbeige.py)
 
+El guion `training/probe_export.sh` toma un checkpoint local y un cuantizador de la misma revisión del motor. Convierte a GGUF, cuantiza y ejecuta el banco bajo un espacio de nombres sin red. Se comprobó su sintaxis. La conversión de un checkpoint personalizado sigue pendiente.
+
 El paso previo a autorizar un entrenamiento largo es cargar un GGUF exportado desde los pesos base y verificar que pasa el banco en Android. Después, un piloto corto puede producir un adaptador para repetir fusión, exportación y evaluación. El dataset de ejemplo comprueba el flujo y requiere ampliación para medir mejoras reales.
 
 ## Futuro agente de Android
