@@ -79,6 +79,9 @@ class ModelStore(private val context: Context) {
         read: ((InputStream) -> Unit) -> Unit
     ): InstalledModel = withContext(Dispatchers.IO) {
         val sha256 = GgufTransfer.normalizedHash(suppliedHash)
+        if (ModelCatalog.candidates.any { it.sha256 == sha256 }) {
+            throw ModelException("Este candidato aún requiere una versión compatible del motor.")
+        }
         installed().firstOrNull { it.sha256 == sha256 && it.profile != null }?.let { return@withContext it }
         if (!directory.isDirectory && !directory.mkdirs()) {
             throw ModelException("No se pudo crear la carpeta de modelos.")

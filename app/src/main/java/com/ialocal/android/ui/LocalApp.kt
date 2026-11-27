@@ -77,6 +77,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -94,6 +95,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ialocal.android.chat.Chat
 import com.ialocal.android.chat.ChatUiState
 import com.ialocal.android.chat.ChatViewModel
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import java.text.Normalizer
 import java.time.Instant
@@ -157,6 +159,11 @@ private fun AppNavigation(vm: ChatViewModel, state: ChatUiState) {
                 value == DrawerValue.Open -> drawer.open()
                 else -> drawer.close()
             }
+        }
+    }
+    LaunchedEffect(drawer) {
+        snapshotFlow { drawer.isClosed }.drop(1).collect { closed ->
+            if (closed) finishEditing()
         }
     }
     BackHandler(enabled = drawer.isOpen && reduce) { setDrawer(DrawerValue.Closed) }

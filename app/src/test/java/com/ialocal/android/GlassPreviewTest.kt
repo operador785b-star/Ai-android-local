@@ -6,7 +6,9 @@ import android.graphics.Canvas
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.geometry.Offset
@@ -102,10 +104,14 @@ class GlassPreviewTest {
             swipe(Offset(width * 0.025f, height * 0.65f), Offset(width * 0.85f, height * 0.65f))
         }
         ui.onNodeWithText("Nuevo chat").assertIsDisplayed()
+        val search = ui.onNodeWithContentDescription("Buscar conversaciones")
+        search.performClick()
+        search.assertIsFocused()
         ui.onRoot().performTouchInput {
             swipe(Offset(width * 0.70f, height * 0.65f), Offset(width * 0.03f, height * 0.65f))
         }
         assertFalse(ui.onNodeWithText("Nuevo chat").isDisplayed())
+        search.assertIsNotFocused()
         ui.onNodeWithContentDescription("Ajustes").performClick()
         ui.onNodeWithText("Apariencia").assertIsDisplayed()
         ui.runOnIdle { ui.activity.onBackPressedDispatcher.onBackPressed() }
