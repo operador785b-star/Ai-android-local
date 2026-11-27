@@ -272,7 +272,7 @@ private fun AppNavigation(vm: ChatViewModel, state: ChatUiState) {
                                     onCancel = vm::cancelTransfer
                                 )
                                 Screen.SETTINGS -> SettingsScreen(
-                                    state, content, vm::configure, vm::configureAppearance, showModels
+                                    state, content, vm::configure, vm::configureAppearance, showModels, vm::notice
                                 )
                             }
                         }

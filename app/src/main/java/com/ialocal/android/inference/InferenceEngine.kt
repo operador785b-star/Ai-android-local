@@ -2,10 +2,23 @@ package com.ialocal.android.inference
 
 import java.io.File
 
+enum class PerformanceMode(val label: String, val idleMs: Long) {
+    ECONOMICO("Económico", 30_000),
+    EQUILIBRADO("Equilibrado", 90_000),
+    MAXIMO("Máximo rendimiento", 180_000);
+
+    fun defaults() = when (this) {
+        ECONOMICO -> InferenceSettings(1024, 256, mode = this)
+        EQUILIBRADO -> InferenceSettings(mode = this)
+        MAXIMO -> InferenceSettings(mode = this)
+    }
+}
+
 data class InferenceSettings(
     val contextTokens: Int = 2048,
     val outputTokens: Int = 512,
-    val threads: Int = DEFAULT_THREADS
+    val threads: Int = DEFAULT_THREADS,
+    val mode: PerformanceMode = PerformanceMode.EQUILIBRADO
 ) {
     companion object {
         const val DEFAULT_THREADS = 2
@@ -22,7 +35,9 @@ data class GenerationRequest(
     val history: List<Exchange>,
     val user: String,
     val settings: InferenceSettings,
-    val profile: EngineProfile
+    val profile: EngineProfile,
+    val conversationId: Long,
+    val effectiveThreads: Int = settings.threads
 )
 
 enum class GenerationEnd { COMPLETE, LENGTH_LIMIT }
@@ -39,10 +54,32 @@ data class InferenceMetrics(
     val decodeMs: Long,
     val processPeakRssKiB: Long,
     val code: Long,
-    val effectiveContext: Long
+    val effectiveContext: Long,
+    val modelLoadMs: Long,
+    val contextInitMs: Long,
+    val tokenizeMs: Long,
+    val promptMs: Long,
+    val reusedPromptTokens: Long,
+    val evaluatedPromptTokens: Long,
+    val modelReused: Boolean,
+    val contextReused: Boolean,
+    val processRssKiB: Long,
+    val armFeatures: Long
 ) {
     val tokensPerSecond: Double?
         get() = if (outputTokens > 1 && decodeMs > 0) (outputTokens - 1) * 1000.0 / decodeMs else null
+    val promptTokensPerSecond: Double?
+        get() = if (evaluatedPromptTokens > 0 && promptMs > 0) evaluatedPromptTokens * 1000.0 / promptMs else null
+
+    companion object {
+        internal const val FIELD_COUNT = 18
+
+        internal fun read(raw: LongArray) = InferenceMetrics(
+            raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], raw[6], raw[7],
+            raw[8], raw[9], raw[10], raw[11], raw[12], raw[13], raw[14] != 0L,
+            raw[15] != 0L, raw[16], raw[17]
+        )
+    }
 }
 
 interface InferenceEngine {

@@ -2,13 +2,23 @@ package com.ialocal.android.inference;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 public final class NativeBridge {
     static { System.loadLibrary("ialocal"); }
 
     private native int inspectModel(String path);
+
+    private native long openSession();
+    private native void closeSession(long handle);
+    private native int generateCached(long handle, long conversation, int batch, boolean checkpoint,
+                                     String path, byte[][] prompts, int context, int output, int threads,
+                                     int profile, int seed, int timeout, long[] metrics, Callback callback);
 
     private native int generate(String path, byte[][] prompts, int context, int output,
                                 int threads, int profile, int seed, int firstTokenTimeoutMs,
@@ -48,8 +58,50 @@ public final class NativeBridge {
                 + "<|im_start|>assistant\n<think>\n\n</think>\n\n").getBytes(StandardCharsets.UTF_8);
     }
 
+    private void series(String[] args) throws Exception {
+        String model = args[1];
+        int profile = Integer.parseInt(args[2]);
+        int context = Integer.parseInt(args[3]);
+        int threads = Integer.parseInt(args[4]);
+        int batch = Integer.parseInt(args[5]);
+        String mode = args[6];
+        if (inspectModel(model) != profile) throw new IllegalArgumentException("Perfil GGUF incompatible");
+        if (!List.of("baseline", "cold", "warm").contains(mode)) throw new IllegalArgumentException(mode);
+        long session = mode.equals("warm") ? openSession() : 0;
+        try {
+            for (String line : Files.readAllLines(Path.of(args[7]))) {
+                String[] fields = line.split("\t");
+                long conversation = Long.parseLong(fields[0]);
+                int maxTokens = Integer.parseInt(fields[1]);
+                byte[][] prompts = { Files.readAllBytes(Path.of(fields[2])) };
+                var callback = new Callback(false);
+                long[] metrics = new long[mode.equals("baseline") ? 8 : 18];
+                int code;
+                if (mode.equals("baseline")) {
+                    code = generate(model, prompts, context, maxTokens, threads, profile, 1234, metrics, callback);
+                } else {
+                    long active = session != 0 ? session : openSession();
+                    try {
+                        code = generateCached(active, conversation, batch, session != 0, model, prompts,
+                                context, maxTokens, threads, profile, 1234, 120_000, metrics, callback);
+                    } finally {
+                        if (session == 0) closeSession(active);
+                    }
+                }
+                String answer = Base64.getEncoder().encodeToString(callback.output.toByteArray());
+                System.out.printf("IA_RESULT\t%d\t%s\t%s%n", code, Arrays.toString(metrics), answer);
+            }
+        } finally {
+            if (session != 0) closeSession(session);
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         NativeBridge bridge = new NativeBridge();
+        if (args.length == 8 && args[0].equals("--series")) {
+            bridge.series(args);
+            return;
+        }
         if (args.length != 0 && args[0].equals("--inspect")) {
             for (int i = 1; i < args.length; i++) {
                 System.out.println(bridge.inspectModel(args[i]) + " " + args[i]);

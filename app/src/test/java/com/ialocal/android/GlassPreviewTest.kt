@@ -33,6 +33,7 @@ import com.ialocal.android.chat.MessageState
 import com.ialocal.android.ui.LocalApp
 import com.ialocal.android.inference.InferenceJournal
 import com.ialocal.android.inference.InferenceSettings
+import com.ialocal.android.inference.PerformanceMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -60,6 +61,10 @@ class GlassPreviewTest {
         ui.onNodeWithText("Apariencia").assertIsDisplayed()
         ui.onNodeWithContentDescription("Reducir animaciones").assertIsOn()
         capture("02-ajustes-oscuro")
+        ui.onNodeWithText("Económico").performClick()
+        assertEquals(PerformanceMode.ECONOMICO.defaults(), vm.state.value.settings)
+        ui.onNodeWithText("Equilibrado").performClick()
+        assertEquals(PerformanceMode.EQUILIBRADO.defaults(), vm.state.value.settings)
         ui.onNodeWithText("Claro").performClick()
         assertEquals(AppearanceMode.LIGHT, vm.state.value.appearance.mode)
         capture("03-ajustes-claro")

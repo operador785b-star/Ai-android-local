@@ -2,6 +2,8 @@ package com.ialocal.android.chat
 
 import android.app.Application
 import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
 import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,6 +15,7 @@ import com.ialocal.android.inference.InferenceMetrics
 import com.ialocal.android.inference.InferencePhase
 import com.ialocal.android.inference.InferenceSettings
 import com.ialocal.android.inference.LlamaEngine
+import com.ialocal.android.inference.PerformanceMode
 import com.ialocal.android.model.InstalledModel
 import com.ialocal.android.model.ModelException
 import com.ialocal.android.model.ModelStore
@@ -52,6 +55,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     private val models = ModelStore(app)
     private val engine = LlamaEngine()
     private val journal = InferenceJournal(app)
+    private val power = app.getSystemService(PowerManager::class.java)
     private val prefs = app.getSharedPreferences("preferences", Application.MODE_PRIVATE)
     private val _state = MutableStateFlow(ChatUiState(
         appearance = AppearanceSettings(
@@ -83,7 +87,9 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                     .takeIf { it in InferenceSettings.outputs && it < context } ?: 512
                 val defaults = InferenceSettings.DEFAULT_THREADS
                 val threads = prefs.getInt("threads", defaults).takeIf { it in InferenceSettings.threadCounts } ?: defaults
-                _state.update { it.copy(settings = InferenceSettings(context, output, threads)) }
+                val mode = PerformanceMode.entries.firstOrNull { it.name == prefs.getString("performance-mode", null) }
+                    ?: PerformanceMode.EQUILIBRADO
+                _state.update { it.copy(settings = InferenceSettings(context, output, threads, mode)) }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -111,6 +117,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             var end = MessageState.ERROR
             var runId: Long? = null
             var metrics: InferenceMetrics? = null
+            var cancellation: String? = null
             try {
                 withContext(NonCancellable) {
                     turn = withContext(Dispatchers.IO) { chats.beginTurn(snapshot.selectedChat, text) }
@@ -119,14 +126,18 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 ensureActive()
                 val currentTurn = checkNotNull(turn)
                 val history = withContext(Dispatchers.IO) { chats.history(currentTurn) }
+                val thermal = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) power?.currentThermalStatus else null
+                val reduced = power?.isPowerSaveMode == true || (thermal ?: 0) >= PowerManager.THERMAL_STATUS_SEVERE
+                val threads = if (reduced) minOf(snapshot.settings.threads, InferenceSettings.DEFAULT_THREADS)
+                    else snapshot.settings.threads
                 var lastPaint = 0L
                 var lastSave = SystemClock.elapsedRealtime()
                 withContext(NonCancellable + Dispatchers.IO) {
-                    runId = journal.start(model.name, snapshot.settings, model.file.length())
+                    runId = journal.start(model.name, snapshot.settings, model.file.length(), threads, thermal)
                     _state.update { it.copy(diagnostics = journal.report()) }
                 }
                 val result = engine.generate(
-                    GenerationRequest(model.file, history, text, snapshot.settings, profile),
+                    GenerationRequest(model.file, history, text, snapshot.settings, profile, currentTurn.chatId, threads),
                     onMetrics = { metrics = it },
                     onPhase = { phase ->
                         if (_state.value.inferencePhase != phase) {
@@ -157,6 +168,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 }
             } catch (cancelled: CancellationException) {
                 end = MessageState.STOPPED
+                cancellation = if (_state.value.stopping) "BOTON_DETENER" else "CICLO_DE_VIDA"
                 throw cancelled
             } catch (error: InferenceException) {
                 notice(error.message ?: "Falló la generación.")
@@ -167,7 +179,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                     withContext(NonCancellable) {
                         runId?.let { id ->
                             val report = withContext(Dispatchers.IO) {
-                                journal.finish(id, end.name, metrics)
+                                journal.finish(id, end.name, metrics, cancellation)
                                 journal.report()
                             }
                             _state.update { it.copy(diagnostics = report) }
@@ -265,6 +277,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     fun activateModel(hash: String) {
         if (!canChangeModel()) return
         val model = _state.value.models.firstOrNull { it.sha256 == hash && it.profile != null } ?: return
+        if (_state.value.activeModel?.sha256 != model.sha256) engine.releaseWhenIdle()
         prefs.edit().putString("model", model.sha256).apply()
         _state.update { it.copy(activeModel = model) }
     }
@@ -274,6 +287,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(transfer = TransferProgress("Eliminando modelo")) }
         viewModelScope.launch {
             try {
+                if (_state.value.activeModel?.sha256 == model.sha256) engine.release()
                 withContext(Dispatchers.IO) { models.delete(model) }
                 refreshModels(_state.value.activeModel?.sha256)
             } catch (cancelled: CancellationException) {
@@ -291,7 +305,15 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     fun configure(value: InferenceSettings) {
         _state.update { it.copy(settings = value) }
         prefs.edit().putInt("context", value.contextTokens)
-            .putInt("output", value.outputTokens).putInt("threads", value.threads).apply()
+            .putInt("output", value.outputTokens).putInt("threads", value.threads)
+            .putString("performance-mode", value.mode.name).apply()
+    }
+
+    fun releaseEngineWhenIdle() = engine.releaseWhenIdle()
+
+    override fun onCleared() {
+        engine.close()
+        super.onCleared()
     }
 
     fun configureAppearance(value: AppearanceSettings) {

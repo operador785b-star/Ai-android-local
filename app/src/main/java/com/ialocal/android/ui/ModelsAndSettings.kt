@@ -1,6 +1,8 @@
 package com.ialocal.android.ui
 
 import android.content.ClipData
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
@@ -71,10 +73,14 @@ import com.ialocal.android.chat.AppearanceMode
 import com.ialocal.android.chat.AppearanceSettings
 import com.ialocal.android.chat.ChatUiState
 import com.ialocal.android.inference.InferenceSettings
+import com.ialocal.android.inference.PerformanceMode
 import com.ialocal.android.model.InstalledModel
 import com.ialocal.android.model.ModelCatalog
 import com.ialocal.android.model.ModelAvailability
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -219,7 +225,8 @@ internal fun SettingsScreen(
     modifier: Modifier,
     onConfigure: (InferenceSettings) -> Unit,
     onAppearance: (AppearanceSettings) -> Unit,
-    onModels: () -> Unit
+    onModels: () -> Unit,
+    onNotice: (String) -> Unit
 ) {
     val colors = LocalGlass.current
     val settings = state.settings
@@ -227,6 +234,23 @@ internal fun SettingsScreen(
     val enabled = !state.loading && !state.generating
     var license by rememberSaveable { mutableStateOf<Int?>(null) }
     val entry = revealProgress()
+    val resolver = LocalContext.current.contentResolver
+    val saveScope = rememberCoroutineScope()
+    val saveReport = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) saveScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val stream = checkNotNull(resolver.openOutputStream(uri))
+                    stream.bufferedWriter(Charsets.UTF_8).use { it.write(state.diagnostics) }
+                }
+                onNotice("Diagnóstico guardado.")
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                onNotice("No se pudo guardar el diagnóstico.")
+            }
+        }
+    }
     Box(modifier, contentAlignment = Alignment.TopCenter) {
         LazyColumn(
             modifier = Modifier.widthIn(max = 590.dp).fillMaxSize(),
@@ -259,6 +283,11 @@ internal fun SettingsScreen(
             item {
                 PreferenceCard("Memoria y contexto", "Ajusta la carga de inferencia local.", Icons.Default.Build,
                     modifier = Modifier.glassReveal(entry, 1)) {
+                    Text("Perfil de rendimiento", style = MaterialTheme.typography.titleSmall)
+                    ChoiceStrip(PerformanceMode.entries, settings.mode, enabled, label = { it.label }) {
+                        if (it != settings.mode) onConfigure(it.defaults())
+                    }
+                    HorizontalDivider(color = colors.divider)
                     NumberPreference("Contexto · tokens", InferenceSettings.contexts, settings.contextTokens, enabled) {
                         onConfigure(settings.copy(contextTokens = it,
                             outputTokens = settings.outputTokens.coerceAtMost(it / 2)))
@@ -286,7 +315,7 @@ internal fun SettingsScreen(
                 }
             }
             item {
-                PreferenceCard("Diagnóstico local", "Tokens/s, latencia, pico RSS y resultado", Icons.Default.Info,
+                PreferenceCard("Diagnóstico local", "Carga, procesamiento, generación y memoria", Icons.Default.Info,
                     modifier = Modifier.glassReveal(entry, 3)) {
                     if (state.diagnostics.isBlank()) {
                         Text("Las mediciones aparecerán después de generar una respuesta.",
@@ -299,6 +328,9 @@ internal fun SettingsScreen(
                                 clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Diagnóstico", state.diagnostics)))
                             }
                         }, Modifier.fillMaxWidth(), primary = false) { Text("Copiar diagnóstico JSON") }
+                        GlassButton({ saveReport.launch("ia-local-diagnostico.json") }, Modifier.fillMaxWidth(), primary = false) {
+                            Text("Guardar diagnóstico JSON")
+                        }
                     }
                 }
             }

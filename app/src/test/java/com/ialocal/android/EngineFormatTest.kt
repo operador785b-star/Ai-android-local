@@ -45,6 +45,14 @@ class EngineFormatTest {
         assertEquals("�", decoder.append(byteArrayOf(), end = true))
     }
 
+    @Test fun growsStreamingBuffersWithoutDroppingPendingUtf8() {
+        val decoder = Utf8Chunks()
+        val accent = "á".encodeToByteArray()
+        assertEquals("", decoder.append(byteArrayOf(accent[0])))
+        val suffix = "x".repeat(1024)
+        assertEquals("á$suffix", decoder.append(byteArrayOf(accent[1]) + suffix.encodeToByteArray(), end = true))
+    }
+
     @Test fun formatsCodeWhileFenceIsStillOpen() {
         val fence = 0x60.toChar().toString().repeat(3)
         assertEquals(

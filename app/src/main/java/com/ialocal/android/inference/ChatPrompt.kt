@@ -6,6 +6,7 @@ internal object ChatPrompt {
         "Usa bloques Markdown para código si el usuario no pidió texto sin formato. " +
         "Si falta información, dilo con claridad."
     private val controlToken = Regex("<\\|[^|<>\\n]{1,80}\\|>|</?think>")
+    private val systemTurn = buildString { turn("system", system) }
     private const val MAX_HISTORY_CHARS = 24_000
 
     // Candidates go from most context to least. Native tokenization picks the first one that fits.
@@ -21,12 +22,15 @@ internal object ChatPrompt {
                 turn("assistant", it.assistant, profile.historyPrefix)
             }
         }
+        val suffix = buildString {
+            turn("user", user)
+            append("<|im_start|>assistant\n").append(profile.answerPrefix)
+        }
         return Array(formatted.size + 1) { drop ->
             buildString {
-                turn("system", system)
+                append(systemTurn)
                 for (index in drop until formatted.size) append(formatted[index])
-                turn("user", user)
-                append("<|im_start|>assistant\n").append(profile.answerPrefix)
+                append(suffix)
             }.encodeToByteArray()
         }
     }
