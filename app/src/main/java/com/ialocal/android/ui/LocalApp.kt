@@ -9,10 +9,13 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,8 +34,10 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -66,6 +71,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -74,10 +80,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ialocal.android.chat.Chat
@@ -108,14 +119,38 @@ fun LocalApp(vm: ChatViewModel, onDarkTheme: (Boolean) -> Unit = {}) {
 private fun AppNavigation(vm: ChatViewModel, state: ChatUiState) {
     var screen by rememberSaveable { mutableStateOf(Screen.CHAT) }
     var modelParent by rememberSaveable { mutableStateOf(Screen.CHAT) }
-    val back = { screen = if (screen == Screen.MODELS) modelParent else Screen.CHAT }
-    val showModels = { modelParent = screen; screen = Screen.MODELS }
+    val focus = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    val finishEditing = {
+        focus.clearFocus()
+        keyboard?.hide()
+        Unit
+    }
+    val back = {
+        finishEditing()
+        screen = if (screen == Screen.MODELS) modelParent else Screen.CHAT
+    }
+    val showModels = {
+        finishEditing()
+        modelParent = screen
+        screen = Screen.MODELS
+    }
     val stateHolder = rememberSaveableStateHolder()
     val colors = LocalGlass.current
     val reduce = LocalReduceMotion.current
     val drawer = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    var drawerWidth by remember { mutableIntStateOf(0) }
+    val drawerProgress = {
+        val offset = drawer.currentOffset
+        when {
+            reduce -> if (drawer.isOpen) 1f else 0f
+            drawerWidth == 0 || !offset.isFinite() -> if (drawer.isOpen) 1f else 0f
+            else -> (1f + offset / drawerWidth).coerceIn(0f, 1f)
+        }
+    }
     val setDrawer: (DrawerValue) -> Unit = { value ->
+        finishEditing()
         scope.launch {
             when {
                 reduce -> drawer.snapTo(value)
@@ -140,19 +175,20 @@ private fun AppNavigation(vm: ChatViewModel, state: ChatUiState) {
     }
     val drawerShape = RoundedCornerShape(topEnd = 32.dp, bottomEnd = 32.dp)
 
-    Box(Modifier.fillMaxSize()) {
-        AmbientBackdrop()
+    Box(Modifier.fillMaxSize().background(colors.canvas)) {
         ModalNavigationDrawer(
             drawerState = drawer,
             gesturesEnabled = !reduce && (screen == Screen.CHAT || drawer.isOpen),
-            scrimColor = Color(0xFF06091A).copy(alpha = if (colors.dark) 0.62f else 0.34f),
+            scrimColor = Color(0xFF06091A).copy(alpha = if (colors.dark) 0.51f else 0.28f),
             drawerContent = {
                 val sheet = Modifier.fillMaxHeight().widthIn(max = 354.dp).fillMaxWidth(0.94f)
+                    .onSizeChanged { drawerWidth = it.width }
                 val sheetInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical)
                 val drawerBody: @Composable ColumnScope.() -> Unit = {
                     GlassSurface(Modifier.fillMaxSize(), drawerShape, GlassTone.SHEET) {
                         ChatDrawer(
                             state = state,
+                            progress = drawerProgress,
                             onClose = { setDrawer(DrawerValue.Closed) },
                             onSelect = { id ->
                                 vm.selectChat(id)
@@ -175,52 +211,65 @@ private fun AppNavigation(vm: ChatViewModel, state: ChatUiState) {
                 )
             }
         ) {
-            Scaffold(
-                containerColor = Color.Transparent,
-                contentColor = colors.ink,
-                contentWindowInsets = WindowInsets.safeDrawing,
-                snackbarHost = { SnackbarHost(snackbars) }
-            ) { inset ->
-                Column(Modifier.fillMaxSize().padding(inset).consumeWindowInsets(inset)) {
-                    GlassToolbar(
-                        screen, modelParent, state,
-                        onHistory = { setDrawer(DrawerValue.Open) },
-                        onSettings = { screen = Screen.SETTINGS },
-                        onBack = back,
-                        onModels = showModels
-                    )
-                    AnimatedContent(
-                        targetState = screen,
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                        transitionSpec = {
-                            if (reduce) EnterTransition.None togetherWith ExitTransition.None
-                            else (fadeIn(tween(220)) + slideInHorizontally(tween(245)) {
-                                if (targetState == Screen.CHAT) -it / 20 else it / 20
-                            }) togetherWith fadeOut(tween(135))
-                        },
-                        label = "navegación"
-                    ) { page ->
-                        val content = Modifier.fillMaxSize()
-                        when (page) {
-                            Screen.CHAT -> stateHolder.SaveableStateProvider(Screen.CHAT.name) {
-                                val live by vm.live.collectAsStateWithLifecycle()
-                                ChatScreen(state, live, content, showModels, vm::send, vm::stopGeneration)
+            Box(Modifier.fillMaxSize().drawerBackdrop(
+                progress = drawerProgress,
+                settledOpen = drawer.isOpen && drawer.targetValue == DrawerValue.Open && !drawer.isAnimationRunning,
+                busy = state.generating || state.transfer != null
+            )) {
+                AmbientBackdrop()
+                Scaffold(
+                    containerColor = Color.Transparent,
+                    contentColor = colors.ink,
+                    contentWindowInsets = WindowInsets.safeDrawing,
+                    snackbarHost = { SnackbarHost(snackbars) }
+                ) { inset ->
+                    Column(Modifier.fillMaxSize().padding(inset).consumeWindowInsets(inset)) {
+                        GlassToolbar(
+                            screen, modelParent, state,
+                            onHistory = { setDrawer(DrawerValue.Open) },
+                            onSettings = { finishEditing(); screen = Screen.SETTINGS },
+                            onBack = back,
+                            onModels = showModels
+                        )
+                        AnimatedContent(
+                            targetState = screen,
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            transitionSpec = {
+                                if (reduce) EnterTransition.None togetherWith ExitTransition.None
+                                else {
+                                    val direction = if (targetState == Screen.MODELS || initialState == Screen.CHAT) 1 else -1
+                                    val enter = tween<IntOffset>(GlassMotion.pageEnter, easing = GlassMotion.glide)
+                                    val exit = tween<IntOffset>(GlassMotion.pageExit, easing = GlassMotion.glide)
+                                    ((fadeIn(tween(GlassMotion.pageEnter)) + slideInHorizontally(enter) { direction * it / 9 })
+                                        togetherWith (fadeOut(tween(GlassMotion.pageExit)) +
+                                            slideOutHorizontally(exit) { -direction * it / 18 }))
+                                        .using(SizeTransform(clip = true))
+                                }
+                            },
+                            label = "navegación"
+                        ) { page ->
+                            val content = Modifier.fillMaxSize()
+                            when (page) {
+                                Screen.CHAT -> stateHolder.SaveableStateProvider(Screen.CHAT.name) {
+                                    val live by vm.live.collectAsStateWithLifecycle()
+                                    ChatScreen(state, live, content, showModels, vm::send, vm::stopGeneration)
+                                }
+                                Screen.MODELS -> ModelScreen(
+                                    state, content,
+                                    onDownload = vm::downloadModel,
+                                    onImport = { name, hash ->
+                                        importName = name
+                                        importHash = hash
+                                        importFile.launch(arrayOf("*/*"))
+                                    },
+                                    onActivate = vm::activateModel,
+                                    onDelete = vm::deleteModel,
+                                    onCancel = vm::cancelTransfer
+                                )
+                                Screen.SETTINGS -> SettingsScreen(
+                                    state, content, vm::configure, vm::configureAppearance, showModels
+                                )
                             }
-                            Screen.MODELS -> ModelScreen(
-                                state, content,
-                                onDownload = vm::downloadModel,
-                                onImport = { name, hash ->
-                                    importName = name
-                                    importHash = hash
-                                    importFile.launch(arrayOf("*/*"))
-                                },
-                                onActivate = vm::activateModel,
-                                onDelete = vm::deleteModel,
-                                onCancel = vm::cancelTransfer
-                            )
-                            Screen.SETTINGS -> SettingsScreen(
-                                state, content, vm::configure, vm::configureAppearance, showModels
-                            )
                         }
                     }
                 }
@@ -251,7 +300,7 @@ private fun GlassToolbar(
                 Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(9.dp)
             ) {
-                PrismMark(size = 34.dp)
+                RibbonMark(size = 34.dp)
                 Column(Modifier.weight(1f)) {
                     val chat = state.chats.firstOrNull { it.id == state.selectedChat }
                     Text(
@@ -282,7 +331,7 @@ private fun GlassToolbar(
                 if (screen == Screen.SETTINGS) "Ajustes" else "Modelos locales",
                 style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f)
             )
-            PrismMark(size = 32.dp)
+            RibbonMark(size = 32.dp)
         }
     }
 }
@@ -290,6 +339,7 @@ private fun GlassToolbar(
 @Composable
 private fun ChatDrawer(
     state: ChatUiState,
+    progress: () -> Float,
     onClose: () -> Unit,
     onSelect: (Long?) -> Unit,
     onRename: (Long, String) -> Unit,
@@ -301,6 +351,8 @@ private fun ChatDrawer(
     var delete by remember { mutableStateOf<Chat?>(null) }
     val canEdit = !state.loading && !state.generating
     val matches = remember(state.chats, query) { searchChats(state.chats, query) }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focus = LocalFocusManager.current
 
     Column(
         Modifier.fillMaxSize().padding(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 12.dp),
@@ -310,7 +362,7 @@ private fun ChatDrawer(
             Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(9.dp)
         ) {
-            PrismMark(size = 31.dp)
+            RibbonMark(size = 31.dp)
             Text("Historial", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
             GlassIconButton("Cerrar historial", onClose) { Icon(Icons.Default.Close, null, Modifier.size(19.dp)) }
         }
@@ -332,7 +384,12 @@ private fun ChatDrawer(
             trailingIcon = if (query.isNotEmpty()) {
                 { IconButton({ query = "" }) { Icon(Icons.Default.Close, "Borrar búsqueda") } }
             } else null,
-            singleLine = true
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = {
+                focus.clearFocus()
+                keyboard?.hide()
+            })
         )
         HorizontalDivider(color = colors.divider)
         if (matches.isEmpty()) {
@@ -347,16 +404,20 @@ private fun ChatDrawer(
             }
         } else {
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                items(matches, key = { it.id }) { chat ->
+                itemsIndexed(matches, key = { _, chat -> chat.id }) { index, chat ->
                     var expanded by remember { mutableStateOf(false) }
                     val selected = chat.id == state.selectedChat
-                    GlassSurface(tone = if (selected) GlassTone.TINTED else GlassTone.QUIET,
+                    val press = remember { MutableInteractionSource() }
+                    val position = Modifier.glassReveal(
+                        progress = { ((progress() - 0.27f) / 0.61f).coerceIn(0f, 1f) }, group = index
+                    )
+                    GlassSurface(position.glassPress(press, canEdit), tone = if (selected) GlassTone.TINTED else GlassTone.QUIET,
                         shape = RoundedCornerShape(18.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(
                                 Modifier.weight(1f).heightIn(min = 56.dp)
                                     .semantics { this.selected = selected }
-                                    .clickable(enabled = canEdit) { onSelect(chat.id) }
+                                    .clickable(interactionSource = press, indication = null, enabled = canEdit) { onSelect(chat.id) }
                                     .padding(start = 12.dp, top = 9.dp, bottom = 9.dp),
                                 verticalArrangement = Arrangement.Center
                             ) {

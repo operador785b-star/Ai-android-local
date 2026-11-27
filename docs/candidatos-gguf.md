@@ -1,0 +1,21 @@
+# Evaluación de los candidatos GGUF
+
+La app 0.3.0 mantiene llama.cpp **b8999** (commit `b97ebdc98f6053604a19d861c08d8087601b96e0`). El catálogo contiene los dos candidatos con revisión, tamaño y hash publicados. La descarga y la activación requieren un perfil habilitado en la app. La inspección local comprueba los metadatos del GGUF antes de incorporar un archivo verificado a la biblioteca; los Qwen3.5 de texto siguen siendo el perfil operativo. [Código de llama.cpp usado por Android](https://github.com/ggml-org/llama.cpp/tree/b97ebdc98f6053604a19d861c08d8087601b96e0)
+
+| Candidato | GGUF y almacenamiento | Licencia | Metadatos del GGUF | Resultado con b8999 |
+| --- | --- | --- | --- | --- |
+| Liquid AI LFM3-1.7B | `LFM3-1.7B-Q4_K_M.gguf`, 1.099.627.808 bytes (1,10 GB) | LFM Open License 1.0, con condiciones de uso comercial | Arquitectura `lfm3`, pretokenizador `lfm2`, plantilla incrustada | Arquitectura desconocida |
+| Nanbeige 4.2 3B | `Nanbeige_Nanbeige4.2-3B-Q4_K_M.gguf`, 2.684.023.968 bytes (2,68 GB) | Apache 2.0 según el modelo original y el conversor | Arquitectura `nanbeige`, pretokenizador `default`, plantilla incrustada | Arquitectura desconocida |
+
+- **LFM3**. El GGUF es de Liquid AI. Su licencia contiene un umbral de ingresos de USD 10 millones y condiciones para uso comercial y redistribución. La plantilla oficial separa roles con `<|im_start|>` y `<|im_end|>`, y controla el razonamiento con `<think></think>` sin los saltos de línea que usa el perfil Qwen3.5 de la app. [GGUF fijado](https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF/tree/cd0c74c575b5c416f3011b5b4c298077f26ca8c2) · [Licencia](https://huggingface.co/LiquidAI/LFM3-1.7B/blob/1da06bec6a819da10b54c67e5c90972b46d81871/LICENSE) · [Plantilla](https://huggingface.co/LiquidAI/LFM3-1.7B/blob/1da06bec6a819da10b54c67e5c90972b46d81871/chat_template.jinja)
+- **Nanbeige**. La conversión de 42ailab es comunitaria. El modelo y la plantilla de referencia proceden de Nanbeige. La plantilla contempla `enable_thinking`, `preserve_thinking`, historial, razonamiento y llamadas de herramienta. Ese perfil requiere su propia validación de plantilla, tokenización y parada. [Modelo original](https://huggingface.co/Nanbeige/Nanbeige4.2-3B/tree/b82e54bd609793562a75cbf9337970a93369eab5) · [Plantilla oficial en tokenizer_config.json](https://huggingface.co/Nanbeige/Nanbeige4.2-3B/blob/b82e54bd609793562a75cbf9337970a93369eab5/tokenizer_config.json) · [GGUF fijado](https://huggingface.co/42ailab/Nanbeige4.2-3B-GGUF/tree/362f75f134fcb874ec20e751d391d4e96d813b80)
+
+## Memoria estimada para 2.048 tokens
+
+Los tamaños indicados son de almacenamiento. Para una caché de claves y valores en FP16, la configuración del LFM3 da aproximadamente 27 MiB con su ventana deslizante de 256 tokens y 44 MiB si las 11 capas de atención se presupuestan como completas. El Nanbeige da unos 176 MiB si sus 22 capas usan atención completa con 8 cabezas KV de 128 elementos. Faltan buffers de cómputo, asignaciones del motor, estados de convolución y memoria de Android. Son estimaciones de planificación. El pico real de RAM, la velocidad y la estabilidad térmica en el Redmi siguen pendientes. [Configuración de LFM3](https://huggingface.co/LiquidAI/LFM3-1.7B/blob/1da06bec6a819da10b54c67e5c90972b46d81871/config.json) · [Configuración de Nanbeige](https://huggingface.co/Nanbeige/Nanbeige4.2-3B/blob/b82e54bd609793562a75cbf9337970a93369eab5/config.json)
+
+## Método y siguiente umbral técnico
+
+Se solicitaron por HTTP Range solo los primeros 12 MiB de cada archivo, suficientes para leer la arquitectura y la plantilla sin instalar pesos. La plantilla incrustada de LFM3 coincide byte por byte con la oficial. La de Nanbeige coincide al omitir el salto de línea final. Se ejecutó el cargador b8999 en Linux con `vocab_only=true` sobre archivos dispersos extendidos a la longitud publicada para pasar la verificación de tamaño. El cargador rechazó explícitamente ambas arquitecturas antes de leer pesos. Los SHA-256 del catálogo proceden del manifiesto LFS, y se comprobarán contra el archivo completo cuando se habilite la descarga.
+
+Para habilitar un candidato se necesita un motor compilado con su arquitectura y un perfil específico, seguido de pruebas de carga de pesos reales, conversación de varios turnos, parada, memoria y rendimiento en ARM64.

@@ -244,7 +244,7 @@ private fun Welcome(onSuggestion: (String) -> Unit) {
                     Modifier.fillMaxWidth().padding(bottom = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    PrismOrb(Modifier.size(width = 224.dp, height = 169.dp))
+                    RibbonHero(Modifier.size(width = 224.dp, height = 169.dp))
                     Text("Piensa en local.", style = MaterialTheme.typography.displaySmall, textAlign = TextAlign.Center)
                     Text(
                         "Ideas, código y preguntas en tu dispositivo.",
@@ -313,7 +313,7 @@ private fun MessageItem(message: Message, body: String, modifier: Modifier) {
 
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            PrismMark(size = 26.dp)
+            RibbonMark(size = 26.dp)
             Text("IA Local", style = MaterialTheme.typography.labelLarge, color = colors.accent)
         }
         if (body.isNotBlank()) {

@@ -13,8 +13,8 @@ android {
         applicationId = "com.ialocal.android"
         minSdk = 28
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += "arm64-v8a" }
         externalNativeBuild {
@@ -36,7 +36,7 @@ android {
     buildTypes {
         create("visualPreview") {
             initWith(getByName("debug"))
-            applicationIdSuffix = ".preview"
+            applicationIdSuffix = ".preview.v03"
             versionNameSuffix = "-preview"
             matchingFallbacks += "debug"
         }

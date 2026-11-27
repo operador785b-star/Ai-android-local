@@ -2,6 +2,7 @@ package com.ialocal.android.model
 
 import android.content.Context
 import android.net.Uri
+import com.ialocal.android.inference.EngineProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -27,27 +28,38 @@ class ModelStore(private val context: Context) {
         file.isFile && file.extension == "gguf" && file.nameWithoutExtension.matches(Regex("[a-f0-9]{64}"))
     }.orEmpty().mapNotNull { file ->
         val sha256 = file.nameWithoutExtension
-        if (sha256 == recommended.sha256 && file.length() != recommended.bytes) return@mapNotNull null
-        val name = if (sha256 == recommended.sha256) recommended.name else
-            names.getString(sha256, null) ?: "Qwen3.5 · ${sha256.take(8)}"
-        InstalledModel(name, sha256, file)
+        val catalog = ModelCatalog.all.firstOrNull { it.sha256 == sha256 }
+        val name = catalog?.name ?: names.getString(sha256, null) ?: "GGUF · ${sha256.take(8)}"
+        val profileKey = "profile-$sha256"
+        val profile = when (val availability = catalog?.availability) {
+            is ModelAvailability.Ready -> availability.profile.takeIf { file.length() == catalog.bytes }
+            is ModelAvailability.Candidate -> null
+            null -> names.getString(profileKey, null)?.let { saved ->
+                EngineProfile.entries.firstOrNull { it.name == saved }
+            } ?: EngineProfile.inspect(file)?.also { names.edit().putString(profileKey, it.name).apply() }
+        }
+        InstalledModel(name, sha256, file, profile)
     }.sortedWith(compareBy({ it.sha256 != recommended.sha256 }, { it.name }))
 
-    suspend fun download(onProgress: (Long, Long?) -> Unit): InstalledModel = install(
-        label = recommended.name, suppliedHash = recommended.sha256, expectedBytes = recommended.bytes,
-        onProgress = onProgress
-    ) { useInput ->
-        val connection = openDownload(URL(recommended.url))
-        try {
-            connection.inputStream.use(useInput)
-        } finally {
-            connection.disconnect()
+    suspend fun download(sha256: String, onProgress: (Long, Long?) -> Unit): InstalledModel {
+        val model = ModelCatalog.downloadable(sha256)
+        val expectedProfile = (model.availability as ModelAvailability.Ready).profile
+        return install(
+            label = model.name, suppliedHash = model.sha256, expectedBytes = model.bytes,
+            expectedProfile = expectedProfile, onProgress = onProgress
+        ) { useInput ->
+            val connection = openDownload(URL(model.url))
+            try {
+                connection.inputStream.use(useInput)
+            } finally {
+                connection.disconnect()
+            }
         }
     }
 
     suspend fun import(
         uri: Uri, label: String, suppliedHash: String, onProgress: (Long, Long?) -> Unit
-    ): InstalledModel = install(label, suppliedHash, null, onProgress) { useInput ->
+    ): InstalledModel = install(label, suppliedHash, null, null, onProgress) { useInput ->
         val input = context.contentResolver.openInputStream(uri)
             ?: throw ModelException("No se pudo leer el archivo elegido.")
         input.use(useInput)
@@ -55,24 +67,25 @@ class ModelStore(private val context: Context) {
 
     fun delete(model: InstalledModel) {
         if (!model.file.delete() && model.file.exists()) throw ModelException("No se pudo eliminar el modelo.")
-        names.edit().remove(model.sha256).apply()
+        names.edit().remove(model.sha256).remove("profile-${model.sha256}").apply()
     }
 
     private suspend fun install(
         label: String,
         suppliedHash: String,
         expectedBytes: Long?,
+        expectedProfile: EngineProfile?,
         onProgress: (Long, Long?) -> Unit,
         read: ((InputStream) -> Unit) -> Unit
     ): InstalledModel = withContext(Dispatchers.IO) {
         val sha256 = GgufTransfer.normalizedHash(suppliedHash)
-        installed().firstOrNull { it.sha256 == sha256 }?.let { return@withContext it }
+        installed().firstOrNull { it.sha256 == sha256 && it.profile != null }?.let { return@withContext it }
         if (!directory.isDirectory && !directory.mkdirs()) {
             throw ModelException("No se pudo crear la carpeta de modelos.")
         }
         val required = (expectedBytes ?: 0) + 64 * 1024 * 1024
         if (directory.usableSpace < required) throw ModelException("Libera espacio en el almacenamiento.")
-        val name = label.trim().take(52).ifBlank { "Qwen3.5 · ${sha256.take(8)}" }
+        val name = label.trim().take(52).ifBlank { "GGUF · ${sha256.take(8)}" }
         val target = File(directory, "$sha256.gguf")
         val partial = File.createTempFile("model-", ".partial", directory)
         try {
@@ -94,9 +107,15 @@ class ModelStore(private val context: Context) {
                 }
             }
             ensureActive()
+            val profile = EngineProfile.inspect(partial)
+                ?: throw ModelException("El formato de este GGUF no es compatible con el motor instalado.")
+            if (expectedProfile != null && expectedProfile != profile) {
+                throw ModelException("El perfil del GGUF no coincide con el catálogo.")
+            }
+            ensureActive()
             Files.move(partial.toPath(), target.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)
-            names.edit().putString(sha256, name).apply()
-            InstalledModel(if (sha256 == recommended.sha256) recommended.name else name, sha256, target)
+            names.edit().putString(sha256, name).putString("profile-$sha256", profile.name).apply()
+            InstalledModel(if (sha256 == recommended.sha256) recommended.name else name, sha256, target, profile)
         } finally {
             partial.delete()
         }

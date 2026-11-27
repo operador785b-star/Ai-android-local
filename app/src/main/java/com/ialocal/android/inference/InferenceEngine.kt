@@ -20,7 +20,8 @@ data class GenerationRequest(
     val model: File,
     val history: List<Exchange>,
     val user: String,
-    val settings: InferenceSettings
+    val settings: InferenceSettings,
+    val profile: EngineProfile
 )
 
 enum class GenerationEnd { COMPLETE, LENGTH_LIMIT }

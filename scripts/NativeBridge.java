@@ -6,6 +6,8 @@ import java.nio.charset.StandardCharsets;
 public final class NativeBridge {
     static { System.loadLibrary("ialocal"); }
 
+    private native int inspectModel(String path);
+
     private native int generate(String path, byte[][] prompts, int context, int output,
                                 int threads, Callback callback);
 
@@ -27,6 +29,12 @@ public final class NativeBridge {
 
     public static void main(String[] args) {
         NativeBridge bridge = new NativeBridge();
+        if (args.length != 0 && args[0].equals("--inspect")) {
+            for (int i = 1; i < args.length; i++) {
+                System.out.println(bridge.inspectModel(args[i]) + " " + args[i]);
+            }
+            return;
+        }
         Callback ongoing = new Callback(false);
         byte[][] prompts = {
             prompt("palabra ".repeat(1500)),

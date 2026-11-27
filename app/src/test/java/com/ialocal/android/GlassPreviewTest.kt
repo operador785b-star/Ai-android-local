@@ -9,9 +9,18 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.performTextInput
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ApplicationProvider
@@ -57,6 +66,11 @@ class GlassPreviewTest {
         ui.onNodeWithText("Configurar modelo").performClick()
         ui.onNodeWithText("Biblioteca local").assertIsDisplayed()
         capture("05-modelos-claro")
+        ui.onNodeWithTag("biblioteca-modelos").performScrollToNode(hasText("Requiere un motor compatible con lfm3."))
+        ui.onNodeWithText("Requiere un motor compatible con lfm3.").assertIsDisplayed()
+        ui.onNodeWithTag("biblioteca-modelos").performScrollToNode(hasText("Requiere un motor compatible con nanbeige."))
+        ui.onNodeWithText("Requiere un motor compatible con nanbeige.").assertIsDisplayed()
+        capture("08-candidatos-claro")
         ui.onNodeWithContentDescription("Volver al chat").performClick()
         ui.onNodeWithContentDescription("Ajustes").performClick()
         ui.onNodeWithText("Oscuro").performClick()
@@ -67,6 +81,7 @@ class GlassPreviewTest {
         capture("06-historial-oscuro")
 
         ui.onNodeWithContentDescription("Buscar conversaciones").performTextInput("matematicas")
+        ui.onNodeWithContentDescription("Buscar conversaciones").performImeAction()
         ui.onNodeWithText("Matemáticas con ejemplos").assertIsDisplayed()
         ui.onNodeWithText("Funciones en Kotlin").assertDoesNotExist()
         ui.onNodeWithContentDescription("Borrar búsqueda").performClick()
@@ -81,6 +96,20 @@ class GlassPreviewTest {
         assertEquals(AppearanceMode.DARK.name, prefs.getString("appearance", null))
         assertFalse(prefs.getBoolean("reduce_motion", true))
         ui.onNodeWithContentDescription("Volver al chat").performClick()
+        ui.onNodeWithText("Copiar código").assertIsDisplayed()
+
+        ui.onRoot().performTouchInput {
+            swipe(Offset(width * 0.025f, height * 0.65f), Offset(width * 0.85f, height * 0.65f))
+        }
+        ui.onNodeWithText("Nuevo chat").assertIsDisplayed()
+        ui.onRoot().performTouchInput {
+            swipe(Offset(width * 0.70f, height * 0.65f), Offset(width * 0.03f, height * 0.65f))
+        }
+        assertFalse(ui.onNodeWithText("Nuevo chat").isDisplayed())
+        ui.onNodeWithContentDescription("Ajustes").performClick()
+        ui.onNodeWithText("Apariencia").assertIsDisplayed()
+        ui.runOnIdle { ui.activity.onBackPressedDispatcher.onBackPressed() }
+        ui.waitUntil(4_000) { ui.onNodeWithText("Copiar código").isDisplayed() }
         ui.onNodeWithText("Copiar código").assertIsDisplayed()
     }
 

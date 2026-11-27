@@ -89,6 +89,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         val text = raw.trim()
         val snapshot = _state.value
         val model = snapshot.activeModel ?: return
+        val profile = model.profile ?: return
         if (snapshot.loading || snapshot.generating || snapshot.transfer != null || text.isBlank()) return
         if (text.length > MAX_MESSAGE_CHARS) {
             notice("El mensaje admite hasta ${MAX_MESSAGE_CHARS} caracteres.")
@@ -110,7 +111,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 var lastPaint = 0L
                 var lastSave = SystemClock.elapsedRealtime()
                 val result = engine.generate(
-                    GenerationRequest(model.file, history, text, snapshot.settings)
+                    GenerationRequest(model.file, history, text, snapshot.settings, profile)
                 ) { fragment ->
                     body.append(fragment)
                     val now = SystemClock.elapsedRealtime()
@@ -192,7 +193,9 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun downloadModel() = startTransfer("Descargando modelo", models::download)
+    fun downloadModel(sha256: String) = startTransfer("Descargando modelo") {
+        models.download(sha256, it)
+    }
 
     fun importModel(uri: Uri, name: String, hash: String) = startTransfer("Importando modelo") {
         models.import(uri, name, hash, it)
@@ -231,7 +234,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     fun activateModel(hash: String) {
         if (!canChangeModel()) return
-        val model = _state.value.models.firstOrNull { it.sha256 == hash } ?: return
+        val model = _state.value.models.firstOrNull { it.sha256 == hash && it.profile != null } ?: return
         prefs.edit().putString("model", model.sha256).apply()
         _state.update { it.copy(activeModel = model) }
     }
@@ -287,7 +290,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun refreshModels(preferred: String?) {
         val installed = withContext(Dispatchers.IO) { models.installed() }
-        val active = installed.firstOrNull { it.sha256 == preferred } ?: installed.firstOrNull()
+        val compatible = installed.filter { it.profile != null }
+        val active = compatible.firstOrNull { it.sha256 == preferred } ?: compatible.firstOrNull()
         prefs.edit().putString("model", active?.sha256).apply()
         _state.update { it.copy(models = installed, activeModel = active) }
     }

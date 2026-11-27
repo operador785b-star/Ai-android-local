@@ -23,7 +23,7 @@ class LlamaEngine : InferenceEngine {
             val result = try {
                 NativeBridge.generate(
                     request.model.absolutePath,
-                    QwenPrompt.candidates(request.history, request.user),
+                    request.profile.prompts(request.history, request.user),
                     settings.contextTokens, settings.outputTokens, settings.threads,
                     NativeCallback({ jobContext.isActive }) { bytes ->
                         decoder.append(bytes).takeIf(String::isNotEmpty)?.let(onText)
@@ -50,6 +50,8 @@ class LlamaEngine : InferenceEngine {
 @Keep
 internal object NativeBridge {
     init { System.loadLibrary("ialocal") }
+
+    external fun inspectModel(path: String): Int
 
     external fun generate(
         path: String, prompts: Array<ByteArray>, context: Int, output: Int, threads: Int,
