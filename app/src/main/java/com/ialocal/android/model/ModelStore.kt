@@ -116,7 +116,7 @@ class ModelStore(private val context: Context) {
                     ?.let { return@withContext it }
             }
             val profile = EngineProfile.inspect(partial)
-                ?: throw ModelException("El formato de este GGUF no es compatible con el motor instalado.")
+                ?: throw ModelException("El GGUF está incompleto o su variante es incompatible. Puedes descargar LFM3 desde el catálogo.")
             val expectedProfile = (catalog?.availability as? ModelAvailability.Ready)?.profile
             if (expectedProfile != null && expectedProfile != profile) {
                 throw ModelException("El perfil del GGUF no coincide con el catálogo.")

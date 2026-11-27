@@ -21,7 +21,7 @@ class ChatNavigationTest {
         // Lazy content may start below the first viewport on small devices.
         compose.onNodeWithContentDescription("Volver al chat").performClick()
         compose.onNodeWithText("Configurar modelo").performClick()
-        compose.onNodeWithText("Descargar Qwen3.5-2B").assertIsDisplayed()
+        compose.onNodeWithText("Descargar Liquid AI LFM3-1.7B").assertIsDisplayed()
 
         compose.onNodeWithTag("biblioteca-modelos").performScrollToNode(hasText("Importar GGUF"))
         compose.onNodeWithText("Importar GGUF").performClick()

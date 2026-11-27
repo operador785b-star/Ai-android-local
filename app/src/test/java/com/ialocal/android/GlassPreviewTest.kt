@@ -74,6 +74,7 @@ class GlassPreviewTest {
         capture("04-chat-claro")
         ui.onNodeWithText("Configurar modelo").performClick()
         ui.onNodeWithText("Biblioteca local").assertIsDisplayed()
+        ui.onNodeWithText("Recomendado para empezar. Se activa al terminar la descarga.").assertIsDisplayed()
         capture("05-modelos-claro")
         ui.onNodeWithTag("biblioteca-modelos").performScrollToNode(hasText("Descargar Liquid AI LFM3-1.7B"))
         ui.onNodeWithText("Descargar Liquid AI LFM3-1.7B").assertIsDisplayed()

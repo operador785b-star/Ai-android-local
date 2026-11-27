@@ -42,4 +42,14 @@ class GgufTransferTest {
             GgufTransfer.copyAndCheck("HTML".byteInputStream(), ByteArrayOutputStream(), null, null) {}
         }
     }
+
+    @Test fun tellsTheUserToExtractAnArchiveBeforeImporting() {
+        val target = ByteArrayOutputStream()
+        val archive = byteArrayOf(0x50, 0x4b, 0x03, 0x04)
+        val error = assertThrows(ModelException::class.java) {
+            GgufTransfer.copyAndCheck(archive.inputStream(), target, null, null) {}
+        }
+        assertEquals("El archivo es un ZIP. Extráelo y elige el modelo .gguf.", error.message)
+        assertEquals(0, target.size())
+    }
 }

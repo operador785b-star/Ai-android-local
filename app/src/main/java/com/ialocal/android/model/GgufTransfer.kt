@@ -23,7 +23,10 @@ internal object GgufTransfer {
             headerOffset += count
         }
         if (!header.contentEquals(byteArrayOf(0x47, 0x47, 0x55, 0x46))) {
-            throw ModelException("El archivo no tiene una cabecera GGUF válida.")
+            if (header.contentEquals(byteArrayOf(0x50, 0x4b, 0x03, 0x04))) {
+                throw ModelException("El archivo es un ZIP. Extráelo y elige el modelo .gguf.")
+            }
+            throw ModelException("El archivo no contiene un modelo GGUF válido. Puedes descargar LFM3 desde Modelos locales.")
         }
         val digest = MessageDigest.getInstance("SHA-256")
         digest.update(header)

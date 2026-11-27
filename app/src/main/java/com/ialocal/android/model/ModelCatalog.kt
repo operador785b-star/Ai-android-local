@@ -26,24 +26,24 @@ data class InstalledModel(
 
 object ModelCatalog {
     val recommended = CatalogModel(
-        name = "Qwen3.5-2B · Q4_K_M",
-        bytes = 1_280_835_840L,
-        sha256 = "aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223",
-        url = "https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/" +
-            "f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf",
-        license = "Apache 2.0",
-        availability = ModelAvailability.Ready(EngineProfile.QWEN35)
+        name = "Liquid AI LFM3-1.7B",
+        bytes = 1_099_627_808L,
+        sha256 = "3793e1e6e2266919d6e015287221b41100175a98eddaba92e111aed3b05c93c4",
+        url = "https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF/resolve/" +
+            "cd0c74c575b5c416f3011b5b4c298077f26ca8c2/LFM3-1.7B-Q4_K_M.gguf",
+        license = "LFM Open License 1.0",
+        availability = ModelAvailability.Ready(EngineProfile.LFM3)
     )
 
     private val alternatives = listOf(
         CatalogModel(
-            name = "Liquid AI LFM3-1.7B",
-            bytes = 1_099_627_808L,
-            sha256 = "3793e1e6e2266919d6e015287221b41100175a98eddaba92e111aed3b05c93c4",
-            url = "https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF/resolve/" +
-                "cd0c74c575b5c416f3011b5b4c298077f26ca8c2/LFM3-1.7B-Q4_K_M.gguf",
-            license = "LFM Open License 1.0",
-            availability = ModelAvailability.Ready(EngineProfile.LFM3)
+            name = "Qwen3.5-2B · Q4_K_M",
+            bytes = 1_280_835_840L,
+            sha256 = "aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223",
+            url = "https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/" +
+                "f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf",
+            license = "Apache 2.0",
+            availability = ModelAvailability.Ready(EngineProfile.QWEN35)
         ),
         CatalogModel(
             name = "Nanbeige 4.2 3B",

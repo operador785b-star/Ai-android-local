@@ -12,10 +12,12 @@ import org.junit.Test
 
 class ModelCatalogTest {
     @Test fun routesVerifiedFilesAndRejectsUnknownDownloads() {
-        assertEquals(EngineProfile.entries, ModelCatalog.all.map {
+        assertEquals(EngineProfile.LFM3, (ModelCatalog.recommended.availability as ModelAvailability.Ready).profile)
+        assertEquals(ModelCatalog.recommended, ModelCatalog.all.first())
+        assertEquals(EngineProfile.entries.toSet(), ModelCatalog.all.map {
             assertEquals(it, ModelCatalog.downloadable(it.sha256))
             (it.availability as ModelAvailability.Ready).profile
-        })
+        }.toSet())
         assertThrows(ModelException::class.java) { ModelCatalog.downloadable("0".repeat(64)) }
     }
 

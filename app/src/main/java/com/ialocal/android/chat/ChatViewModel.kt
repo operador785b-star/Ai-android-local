@@ -255,7 +255,6 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 installedModel = work { bytes, total ->
                     _state.update { it.copy(transfer = TransferProgress(label, bytes, total)) }
                 }
-                notice("Modelo verificado y listo para usar.")
             } catch (cancelled: CancellationException) {
                 notice("Transferencia cancelada.")
                 throw cancelled
@@ -265,9 +264,15 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 notice("No se pudo transferir el modelo. Comprueba la conexión, el archivo y el espacio disponible.")
             } finally {
                 withContext(NonCancellable) {
-                    refreshModels(installedModel?.sha256 ?: _state.value.activeModel?.sha256)
-                    _state.update { it.copy(transfer = null) }
-                    transfer = null
+                    try {
+                        refreshModels(installedModel?.sha256 ?: _state.value.activeModel?.sha256)
+                        if (installedModel != null) notice("Modelo en uso. Vuelve al chat y escribe tu mensaje.")
+                    } catch (_: Exception) {
+                        notice("No se pudo actualizar la biblioteca. Vuelve a abrir la aplicación.")
+                    } finally {
+                        _state.update { it.copy(transfer = null) }
+                        transfer = null
+                    }
                 }
             }
         }

@@ -113,18 +113,6 @@ internal fun ModelScreen(
                 Text("Elige qué modelo usar en el teléfono.", Modifier.padding(top = 4.dp),
                     style = MaterialTheme.typography.bodyMedium, color = colors.softInk)
             }
-            items(available, key = { it.sha256 }) { model ->
-                val title = model.name.substringBefore(" · ")
-                PreferenceCard(title, "Q4_K_M · ${fileSize(model.bytes)} · ${model.license}", Icons.Default.Build,
-                    tone = GlassTone.TINTED) {
-                    Text("La descarga se verifica con SHA-256.",
-                        style = MaterialTheme.typography.bodyMedium, color = colors.softInk)
-                    GlassButton({ onDownload(model.sha256) }, Modifier.fillMaxWidth(), enabled = canChange) {
-                        Text("Descargar $title")
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, null, Modifier.size(18.dp))
-                    }
-                }
-            }
             state.transfer?.let { transfer ->
                 item {
                     PreferenceCard(transfer.label, null, Icons.Default.Info) {
@@ -142,6 +130,20 @@ internal fun ModelScreen(
                         if (transfer.label != "Eliminando modelo") {
                             GlassButton(onCancel, primary = false) { Text("Cancelar transferencia") }
                         }
+                    }
+                }
+            }
+            items(available, key = { it.sha256 }) { model ->
+                val title = model.name.substringBefore(" · ")
+                val hint = if (model == ModelCatalog.recommended) {
+                    "Recomendado para empezar. Se activa al terminar la descarga."
+                } else "La descarga se verifica con SHA-256."
+                PreferenceCard(title, "Q4_K_M · ${fileSize(model.bytes)} · ${model.license}", Icons.Default.Build,
+                    tone = GlassTone.TINTED) {
+                    Text(hint, style = MaterialTheme.typography.bodyMedium, color = colors.softInk)
+                    GlassButton({ onDownload(model.sha256) }, Modifier.fillMaxWidth(), enabled = canChange) {
+                        Text("Descargar $title")
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, null, Modifier.size(18.dp))
                     }
                 }
             }
@@ -201,8 +203,11 @@ internal fun ModelScreen(
             onDismissRequest = { importDialog = false },
             title = { Text("Importar modelo GGUF") },
             text = {
-                OutlinedTextField(name, { if (it.length <= 52) name = it },
-                    label = { Text("Nombre (opcional)") }, singleLine = true)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Elige el archivo .gguf del modelo. Si viene en ZIP, extráelo primero.")
+                    OutlinedTextField(name, { if (it.length <= 52) name = it },
+                        label = { Text("Nombre (opcional)") }, singleLine = true)
+                }
             },
             dismissButton = { TextButton(onClick = { importDialog = false }) { Text("Cancelar") } },
             confirmButton = {
