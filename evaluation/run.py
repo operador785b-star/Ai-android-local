@@ -20,16 +20,44 @@ METRICS = ("tokens_entrada", "tokens_salida", "total_ms", "primer_fragmento_ms",
            "decodificacion_ms", "pico_rss_proceso_kib", "codigo_motor")
 
 
-def chat_prompt(case, profile):
+def chat_prompt(case, profile, system=SYSTEM):
     def turn(role, content):
         return f"<|im_start|>{role}\n{content}<|im_end|>\n"
 
-    prompt = turn("system", SYSTEM)
+    prompt = turn("system", system)
     history_prefix = "" if profile[0] == 1 else profile[1]
     for exchange in case.get("history", []):
         prompt += turn("user", exchange["user"])
         prompt += turn("assistant", history_prefix + exchange["assistant"])
     return prompt + turn("user", case["prompt"]) + f"<|im_start|>assistant\n{profile[1]}"
+
+
+def json_scores(answer, expected):
+    text = answer.strip()
+    opening = re.match(r"```(?:json)?[ \t]*\n", text, re.IGNORECASE)
+    closing = re.search(r"\n```[ \t]*$", text)
+    # An extra Markdown fence can fail formatting while the values are still correct.
+    payload = text[opening.end() if opening else 0:closing.start() if closing else len(text)]
+
+    def unique_keys(pairs):
+        obj = {}
+        for key, value in pairs:
+            if key in obj:
+                raise ValueError(f"Clave JSON duplicada: {key}")
+            obj[key] = value
+        return obj
+
+    try:
+        data = json.loads(payload, object_pairs_hook=unique_keys)
+    except ValueError:
+        return {"format": False, "values": False}
+    shape = type(data) is type(expected)
+    if shape and isinstance(expected, dict):
+        shape = data.keys() == expected.keys() and all(
+            type(data[key]) is type(value) for key, value in expected.items()
+        )
+    same_values = shape and json.dumps(data, sort_keys=True) == json.dumps(expected, sort_keys=True)
+    return {"format": shape and not (opening or closing), "values": same_values}
 
 
 def verify(case, answer):
@@ -41,9 +69,9 @@ def verify(case, answer):
         return text == expected
     if kind == "regex":
         return re.search(expected, text) is not None
+    if kind == "json":
+        return all(json_scores(answer, expected).values())
     try:
-        if kind == "json":
-            return json.dumps(json.loads(text), sort_keys=True) == json.dumps(expected, sort_keys=True)
         if kind == "csv":
             return list(csv.reader(text.splitlines(), strict=True)) == expected
         if kind == "markdown":
@@ -78,8 +106,12 @@ def main():
     parser.add_argument("report", type=Path)
     parser.add_argument("--cases", type=Path, default=Path(__file__).with_name("es-local.jsonl"))
     parser.add_argument("--threads", type=int, choices=range(1, 5), default=2)
+    parser.add_argument("--system-file", type=Path, help="Mensaje de sistema alternativo en UTF-8")
     args = parser.parse_args()
     profile = PROFILES[args.profile]
+    system = args.system_file.read_text(encoding="utf-8").strip() if args.system_file else SYSTEM
+    if not system:
+        parser.error("El mensaje de sistema debe contener texto.")
     with args.gguf.open("rb") as weights:
         digest = hashlib.file_digest(weights, "sha256").hexdigest()
     cases = [json.loads(line) for line in args.cases.read_text().splitlines() if line]
@@ -87,7 +119,7 @@ def main():
     with tempfile.TemporaryDirectory() as temp:
         prompt_file = Path(temp) / "prompt"
         for case in cases:
-            prompt_file.write_text(chat_prompt(case, profile), encoding="utf-8")
+            prompt_file.write_text(chat_prompt(case, profile, system), encoding="utf-8")
             error = None
             metrics = {}
             try:
@@ -107,12 +139,16 @@ def main():
             except subprocess.TimeoutExpired:
                 answer, error = "", "Tiempo de espera agotado"
             passed = not error and verify(case, answer)
-            results.append({"id": case["id"], "category": case["category"], "passed": passed,
-                            "answer": answer, "metrics": metrics, "error": error})
+            result = {"id": case["id"], "category": case["category"], "passed": passed,
+                      "answer": answer, "metrics": metrics, "error": error}
+            if case["check"] == "json" and not error:
+                result["json_checks"] = json_scores(answer, case["expect"])
+            results.append(result)
             print(case["id"], "OK" if passed else "FALLO", flush=True)
     args.report.write_text(json.dumps({
         "profile": args.profile, "sha256": digest, "seed": 1234, "context": 2048, "threads": args.threads,
         "suite_sha256": hashlib.sha256(args.cases.read_bytes()).hexdigest(),
+        "system_sha256": hashlib.sha256(system.encode("utf-8")).hexdigest(),
         "passed": sum(result["passed"] for result in results), "total": len(results), "results": results,
     }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 

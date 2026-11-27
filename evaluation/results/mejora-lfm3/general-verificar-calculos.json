@@ -1,0 +1,187 @@
+{
+  "profile": "lfm3",
+  "sha256": "3793e1e6e2266919d6e015287221b41100175a98eddaba92e111aed3b05c93c4",
+  "seed": 1234,
+  "context": 2048,
+  "threads": 2,
+  "suite_sha256": "e5c4fd5bf5e32ca7427b96f81248495140dc01ed67ff06f785ff14a24281e204",
+  "system_sha256": "7fb67801f2fc4e723018472f1cdefca25e9c0700721cfdcceed48a65f6a575c6",
+  "passed": 5,
+  "total": 10,
+  "results": [
+    {
+      "id": "codigo-fibonacci",
+      "category": "programacion",
+      "passed": true,
+      "answer": "```python\ndef fibonacci(n):\n    if n == 0:\n        return 0\n    a, b = 0, 1\n    for _ in range(2, n + 1):\n        a, b = b, a + b\n    return b if n > 1 else 1\n```",
+      "metrics": {
+        "tokens_entrada": 113,
+        "tokens_salida": 67,
+        "total_ms": 6303,
+        "primer_fragmento_ms": 3154,
+        "decodificacion_ms": 3148,
+        "pico_rss_proceso_kib": 1928740,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 20.97
+      },
+      "error": null
+    },
+    {
+      "id": "bug-acumulador",
+      "category": "depuracion",
+      "passed": false,
+      "answer": "```python\ndef total(xs):\n    s = 0\n    for x in xs:\n        s = x\n    return s\n```",
+      "metrics": {
+        "tokens_entrada": 121,
+        "tokens_salida": 31,
+        "total_ms": 4174,
+        "primer_fragmento_ms": 2883,
+        "decodificacion_ms": 1291,
+        "pico_rss_proceso_kib": 1928420,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 23.24
+      },
+      "error": null
+    },
+    {
+      "id": "capital-peru",
+      "category": "conocimiento",
+      "passed": false,
+      "answer": "Lima\n```\nLima\n```",
+      "metrics": {
+        "tokens_entrada": 84,
+        "tokens_salida": 8,
+        "total_ms": 2377,
+        "primer_fragmento_ms": 2009,
+        "decodificacion_ms": 368,
+        "pico_rss_proceso_kib": 1928708,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 19.02
+      },
+      "error": null
+    },
+    {
+      "id": "agua",
+      "category": "conocimiento",
+      "passed": false,
+      "answer": "0.02\nLa temperatura de congelación del agua pura a presión atmosférica normal es 0.02 °C. Sin embargo, en",
+      "metrics": {
+        "tokens_entrada": 97,
+        "tokens_salida": 32,
+        "total_ms": 3892,
+        "primer_fragmento_ms": 2604,
+        "decodificacion_ms": 1287,
+        "pico_rss_proceso_kib": 1928496,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 24.09
+      },
+      "error": null
+    },
+    {
+      "id": "silogismo",
+      "category": "logica",
+      "passed": true,
+      "answer": "No",
+      "metrics": {
+        "tokens_entrada": 113,
+        "tokens_salida": 1,
+        "total_ms": 2633,
+        "primer_fragmento_ms": 2533,
+        "decodificacion_ms": 100,
+        "pico_rss_proceso_kib": 1928200,
+        "codigo_motor": 0,
+        "tokens_por_segundo": null
+      },
+      "error": null
+    },
+    {
+      "id": "ecuacion",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "20 = 3(x-2) + 8  \n20 - 8 = 3(x-2)  \n12 = 3(x-2)  \n12/3 = x-2",
+      "metrics": {
+        "tokens_entrada": 91,
+        "tokens_salida": 40,
+        "total_ms": 3762,
+        "primer_fragmento_ms": 2205,
+        "decodificacion_ms": 1556,
+        "pico_rss_proceso_kib": 1928612,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 25.06
+      },
+      "error": null
+    },
+    {
+      "id": "dos-lineas",
+      "category": "instrucciones",
+      "passed": false,
+      "answer": "AZUL\nVERDE\n```",
+      "metrics": {
+        "tokens_entrada": 92,
+        "tokens_salida": 7,
+        "total_ms": 2649,
+        "primer_fragmento_ms": 2336,
+        "decodificacion_ms": 313,
+        "pico_rss_proceso_kib": 1928492,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 19.17
+      },
+      "error": null
+    },
+    {
+      "id": "markdown",
+      "category": "markdown",
+      "passed": true,
+      "answer": "| fruta | cantidad |\n|-------|---------|\n| pera   | 2       |\n| uva    | 4       |",
+      "metrics": {
+        "tokens_entrada": 99,
+        "tokens_salida": 26,
+        "total_ms": 3829,
+        "primer_fragmento_ms": 2749,
+        "decodificacion_ms": 1079,
+        "pico_rss_proceso_kib": 1928540,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 23.17
+      },
+      "error": null
+    },
+    {
+      "id": "csv",
+      "category": "csv",
+      "passed": true,
+      "answer": "ciudad,altitud\nLima,154",
+      "metrics": {
+        "tokens_entrada": 99,
+        "tokens_salida": 10,
+        "total_ms": 2988,
+        "primer_fragmento_ms": 2483,
+        "decodificacion_ms": 505,
+        "pico_rss_proceso_kib": 1928576,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 17.82
+      },
+      "error": null
+    },
+    {
+      "id": "json",
+      "category": "json",
+      "passed": true,
+      "answer": "{\n  \"nombre\": \"Ana\",\n  \"edad\": 23,\n  \"activo\": true\n}",
+      "metrics": {
+        "tokens_entrada": 105,
+        "tokens_salida": 24,
+        "total_ms": 3841,
+        "primer_fragmento_ms": 2805,
+        "decodificacion_ms": 1035,
+        "pico_rss_proceso_kib": 1928488,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 22.22
+      },
+      "error": null,
+      "json_checks": {
+        "format": true,
+        "values": true
+      }
+    }
+  ]
+}
