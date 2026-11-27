@@ -10,6 +10,7 @@ import com.ialocal.android.inference.GenerationRequest
 import com.ialocal.android.inference.InferenceException
 import com.ialocal.android.inference.InferenceJournal
 import com.ialocal.android.inference.InferenceMetrics
+import com.ialocal.android.inference.InferencePhase
 import com.ialocal.android.inference.InferenceSettings
 import com.ialocal.android.inference.LlamaEngine
 import com.ialocal.android.model.InstalledModel
@@ -40,6 +41,7 @@ data class ChatUiState(
     val appearance: AppearanceSettings = AppearanceSettings(),
     val loading: Boolean = true,
     val generating: Boolean = false,
+    val inferencePhase: InferencePhase? = null,
     val stopping: Boolean = false,
     val transfer: TransferProgress? = null,
     val notice: String? = null
@@ -79,7 +81,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 val context = prefs.getInt("context", 2048).takeIf { it in InferenceSettings.contexts } ?: 2048
                 val output = prefs.getInt("output", 512)
                     .takeIf { it in InferenceSettings.outputs && it < context } ?: 512
-                val threads = prefs.getInt("threads", 4).takeIf { it in InferenceSettings.threadCounts } ?: 4
+                val defaults = InferenceSettings.DEFAULT_THREADS
+                val threads = prefs.getInt("threads", defaults).takeIf { it in InferenceSettings.threadCounts } ?: defaults
                 _state.update { it.copy(settings = InferenceSettings(context, output, threads)) }
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -101,7 +104,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             notice("El mensaje admite hasta ${MAX_MESSAGE_CHARS} caracteres.")
             return
         }
-        _state.update { it.copy(generating = true, stopping = false) }
+        _state.update { it.copy(generating = true, stopping = false, inferencePhase = InferencePhase.LOADING_MODEL) }
         generation = viewModelScope.launch {
             var turn: Turn? = null
             val body = StringBuilder()
@@ -119,11 +122,19 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 var lastPaint = 0L
                 var lastSave = SystemClock.elapsedRealtime()
                 withContext(NonCancellable + Dispatchers.IO) {
-                    runId = journal.start(model.name, snapshot.settings)
+                    runId = journal.start(model.name, snapshot.settings, model.file.length())
+                    _state.update { it.copy(diagnostics = journal.report()) }
                 }
                 val result = engine.generate(
                     GenerationRequest(model.file, history, text, snapshot.settings, profile),
-                    onMetrics = { metrics = it }
+                    onMetrics = { metrics = it },
+                    onPhase = { phase ->
+                        if (_state.value.inferencePhase != phase) {
+                            runId?.let { journal.updatePhase(it, phase) }
+                            val report = journal.report()
+                            _state.update { it.copy(inferencePhase = phase, diagnostics = report) }
+                        }
+                    }
                 ) { fragment ->
                     body.append(fragment)
                     val now = SystemClock.elapsedRealtime()
@@ -172,7 +183,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                     notice("No se pudo actualizar el historial.")
                 } finally {
                     _live.value = null
-                    _state.update { it.copy(generating = false, stopping = false) }
+                    _state.update { it.copy(generating = false, stopping = false, inferencePhase = null) }
                     generation = null
                 }
             }

@@ -11,21 +11,24 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace {
 enum Result : jint {
     complete = 0, limit = 1, stopped = 2, invalid_model = 3,
-    prompt_too_long = 4, inference_error = 5, no_memory = 6,
+    prompt_too_long = 4, inference_error = 5, no_memory = 6, first_token_timeout = 7,
 };
 
 using Clock = std::chrono::steady_clock;
+enum Phase : jint { loading_model = 1, creating_context = 2, processing_prompt = 3, generating_text = 4 };
 
 struct Metrics {
     Clock::time_point started = Clock::now();
     Clock::time_point first{};
     jlong prompt = 0;
     jlong output = 0;
+    jlong context = 0;
 
     void write(JNIEnv *env, jlongArray target, Result result) const {
         if (env->ExceptionCheck()) return;
@@ -39,6 +42,7 @@ struct Metrics {
         const jlong values[] = {prompt, output, ms(now - started),
             emitted ? ms(first - started) : -1, emitted ? ms(now - first) : 0, rss, result};
         env->SetLongArrayRegion(target, 0, 7, values);
+        if (env->GetArrayLength(target) >= 8) env->SetLongArrayRegion(target, 7, 1, &context);
     }
 };
 
@@ -54,10 +58,32 @@ struct Callback {
     jobject receiver;
     jmethodID active;
     jmethodID piece;
+    jmethodID phase;
+    Clock::time_point deadline;
+    const std::thread::id caller = std::this_thread::get_id();
+    Clock::time_point next_poll{};
+    bool cancelled = false;
 
-    bool running() const {
+    bool java_running() const {
         return !env->ExceptionCheck() && env->CallBooleanMethod(receiver, active) == JNI_TRUE;
     }
+
+    bool running() const { return Clock::now() < deadline && java_running(); }
+
+    Result stop_reason() const { return java_running() ? first_token_timeout : stopped; }
+
+    bool abort_compute() {
+        const auto now = Clock::now();
+        if (now >= deadline) return true;
+        // The CPU backend calls on worker zero. Never use this JNIEnv on a different thread.
+        if (std::this_thread::get_id() == caller && now >= next_poll) {
+            next_poll = now + std::chrono::milliseconds(50);
+            cancelled = !java_running();
+        }
+        return std::this_thread::get_id() == caller && cancelled;
+    }
+
+    void report(Phase value) const { env->CallVoidMethod(receiver, phase, static_cast<jint>(value)); }
 
     bool emit(const char *bytes, int count) const {
         const auto chunk = env->NewByteArray(count);
@@ -91,10 +117,11 @@ std::vector<llama_token> select_prompt(
 }
 
 Result run(JNIEnv *env, jstring path, jobjectArray prompts, int n_ctx, int output,
-           int threads, int profile, uint32_t seed, const Callback &callback, Metrics &metrics) {
+           int threads, int profile, uint32_t seed, Callback &callback, Metrics &metrics) {
     static std::once_flag backend;
     std::call_once(backend, llama_backend_init);
-    if (!callback.running()) return stopped;
+    if (!callback.running()) return callback.stop_reason();
+    callback.report(loading_model);
 
     auto model_params = llama_model_default_params();
     model_params.n_gpu_layers = 0;
@@ -104,14 +131,14 @@ Result run(JNIEnv *env, jstring path, jobjectArray prompts, int n_ctx, int outpu
     model_params.progress_callback = [](float, void *data) {
         return static_cast<const Callback *>(data)->running();
     };
-    model_params.progress_callback_user_data = const_cast<Callback *>(&callback);
+    model_params.progress_callback_user_data = &callback;
 
     const char *file = env->GetStringUTFChars(path, nullptr);
     if (!file) return no_memory;
     std::unique_ptr<llama_model, decltype(&llama_model_free)> model(
         llama_model_load_from_file(file, model_params), llama_model_free);
     env->ReleaseStringUTFChars(path, file);
-    if (!callback.running()) return stopped;
+    if (!callback.running()) return callback.stop_reason();
     if (!model) return invalid_model;
 
     char architecture[32] = {};
@@ -119,27 +146,36 @@ Result run(JNIEnv *env, jstring path, jobjectArray prompts, int n_ctx, int outpu
     if (profile_from_architecture(architecture) != profile) return invalid_model;
     const auto *vocab = llama_model_get_vocab(model.get());
     auto tokens = select_prompt(env, prompts, vocab, n_ctx - output, callback);
-    if (!callback.running()) return stopped;
+    if (!callback.running()) return callback.stop_reason();
     if (tokens.empty()) return prompt_too_long;
     metrics.prompt = static_cast<jlong>(tokens.size());
 
     auto ctx_params = llama_context_default_params();
     constexpr int batch_size = 64;
-    ctx_params.n_ctx = n_ctx;
+    constexpr int context_block = 256;
+    const int needed = static_cast<int>(tokens.size()) + output;
+    ctx_params.n_ctx = profile == 3
+        ? std::max(512, (needed + context_block - 1) / context_block * context_block) : n_ctx;
     ctx_params.n_batch = batch_size;
     ctx_params.n_ubatch = batch_size;
     ctx_params.n_threads = threads;
     ctx_params.n_threads_batch = threads;
     ctx_params.no_perf = true;
+    ctx_params.abort_callback = [](void *data) { return static_cast<Callback *>(data)->abort_compute(); };
+    ctx_params.abort_callback_data = &callback;
+    callback.report(creating_context);
     std::unique_ptr<llama_context, decltype(&llama_free)> ctx(
         llama_init_from_model(model.get(), ctx_params), llama_free);
+    if (!callback.running()) return callback.stop_reason();
     if (!ctx) return no_memory;
+    metrics.context = llama_n_ctx(ctx.get());
+    callback.report(processing_prompt);
 
     for (int offset = 0; offset < static_cast<int>(tokens.size()); offset += batch_size) {
-        if (!callback.running()) return stopped;
+        if (!callback.running()) return callback.stop_reason();
         const int size = std::min(batch_size, static_cast<int>(tokens.size()) - offset);
         if (llama_decode(ctx.get(), llama_batch_get_one(tokens.data() + offset, size)) != 0) {
-            return inference_error;
+            return callback.running() ? inference_error : callback.stop_reason();
         }
     }
 
@@ -165,7 +201,7 @@ Result run(JNIEnv *env, jstring path, jobjectArray prompts, int n_ctx, int outpu
 
     std::vector<char> buffer(256);
     for (int step = 0; step < output; ++step) {
-        if (!callback.running()) return stopped;
+        if (!callback.running()) return callback.stop_reason();
         llama_token token = llama_sampler_sample(sampler.get(), ctx.get(), -1);
         if (llama_vocab_is_eog(vocab, token)) return complete;
         int length = llama_token_to_piece(vocab, token, buffer.data(), buffer.size(), 0, false);
@@ -176,11 +212,16 @@ Result run(JNIEnv *env, jstring path, jobjectArray prompts, int n_ctx, int outpu
         if (length < 0) return inference_error;
         ++metrics.output;
         if (length > 0) {
-            if (metrics.first == Clock::time_point{}) metrics.first = Clock::now();
+            if (metrics.first == Clock::time_point{}) {
+                if (!callback.running()) return callback.stop_reason();
+                metrics.first = Clock::now();
+                callback.deadline = Clock::time_point::max();
+                callback.report(generating_text);
+            }
             if (!callback.emit(buffer.data(), length)) return inference_error;
         }
         if (step + 1 < output && llama_decode(ctx.get(), llama_batch_get_one(&token, 1)) != 0) {
-            return inference_error;
+            return callback.running() ? inference_error : callback.stop_reason();
         }
     }
     return limit;
@@ -190,9 +231,10 @@ Result run(JNIEnv *env, jstring path, jobjectArray prompts, int n_ctx, int outpu
 extern "C" JNIEXPORT jint JNICALL
 Java_com_ialocal_android_inference_NativeBridge_generate(
         JNIEnv *env, jobject, jstring path, jobjectArray prompts, jint context,
-        jint output, jint threads, jint profile, jint seed, jlongArray stats, jobject receiver) {
+        jint output, jint threads, jint profile, jint seed, jint first_token_timeout_ms,
+        jlongArray stats, jobject receiver) {
     if (!stats || env->GetArrayLength(stats) < 7 || profile < 1 || profile > 3 || context < 1024 || context > 4096 || output < 1 || output > 1024 ||
-        output >= context || threads < 1 || threads > 4) {
+        output >= context || threads < 1 || threads > 4 || first_token_timeout_ms < 1) {
         return inference_error;
     }
     jclass type = env->GetObjectClass(receiver);
@@ -200,12 +242,16 @@ Java_com_ialocal_android_inference_NativeBridge_generate(
     if (!active) return inference_error;
     const auto piece = env->GetMethodID(type, "onBytes", "([B)V");
     if (!piece) return inference_error;
+    const auto phase = env->GetMethodID(type, "onPhase", "(I)V");
+    if (!phase) return inference_error;
     env->DeleteLocalRef(type);
     Metrics metrics;
     Result result;
     try {
+        Callback callback{env, receiver, active, piece, phase,
+                          metrics.started + std::chrono::milliseconds(first_token_timeout_ms)};
         result = run(env, path, prompts, context, output, threads, profile, static_cast<uint32_t>(seed),
-                     {env, receiver, active, piece}, metrics);
+                     callback, metrics);
     } catch (const std::bad_alloc &) {
         result = no_memory;
     } catch (const std::exception &) {

@@ -2,6 +2,8 @@ package com.ialocal.android.inference;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class NativeBridge {
     static { System.loadLibrary("ialocal"); }
@@ -9,7 +11,13 @@ public final class NativeBridge {
     private native int inspectModel(String path);
 
     private native int generate(String path, byte[][] prompts, int context, int output,
-                                int threads, int profile, int seed, long[] metrics, Callback callback);
+                                int threads, int profile, int seed, int firstTokenTimeoutMs,
+                                long[] metrics, Callback callback);
+
+    private int generate(String path, byte[][] prompts, int context, int output, int threads,
+                         int profile, int seed, long[] metrics, Callback callback) {
+        return generate(path, prompts, context, output, threads, profile, seed, 120_000, metrics, callback);
+    }
 
     private int generate(String path, byte[][] prompts, int context, int output, int threads, Callback callback) {
         return generate(path, prompts, context, output, threads, 1, -1, new long[7], callback);
@@ -18,11 +26,20 @@ public final class NativeBridge {
     public static final class Callback {
         final ByteArrayOutputStream output = new ByteArrayOutputStream();
         final boolean stopAfterFirstPiece;
+        final List<Integer> phases = new ArrayList<>();
+        boolean cancelDuringPrefill;
+        int prefillChecks;
         int fragments;
 
         Callback(boolean stopAfterFirstPiece) { this.stopAfterFirstPiece = stopAfterFirstPiece; }
-        public boolean isActive() { return !stopAfterFirstPiece || fragments == 0; }
+        public boolean isActive() {
+            if (cancelDuringPrefill && !phases.isEmpty() && phases.get(phases.size() - 1) == 3) {
+                return ++prefillChecks == 1;
+            }
+            return !stopAfterFirstPiece || fragments == 0;
+        }
         public void onBytes(byte[] bytes) { output.writeBytes(bytes); fragments++; }
+        public void onPhase(int phase) { phases.add(phase); }
     }
 
     private static byte[] prompt(String user) {
@@ -37,6 +54,34 @@ public final class NativeBridge {
             for (int i = 1; i < args.length; i++) {
                 System.out.println(bridge.inspectModel(args[i]) + " " + args[i]);
             }
+            return;
+        }
+        if (args.length == 3 && args[0].equals("--nanbeige-start")) {
+            String file = args[1];
+            byte[][] prompts = { java.nio.file.Files.readAllBytes(java.nio.file.Path.of(args[2])) };
+            long[] metrics = new long[8];
+            var slow = new Callback(false);
+            int timedOut = bridge.generate(file, prompts, 2048, 40, 2, 3, 1234, 1, metrics, slow);
+            if (timedOut != 7 || slow.fragments != 0 || metrics[3] != -1) {
+                throw new AssertionError("Falló el límite antes del primer fragmento " + timedOut);
+            }
+
+            var cancelled = new Callback(false);
+            cancelled.cancelDuringPrefill = true;
+            int stopped = bridge.generate(file, prompts, 2048, 40, 2, 3, 1234, metrics, cancelled);
+            if (stopped != 2 || cancelled.fragments != 0 || !cancelled.phases.equals(List.of(1, 2, 3))) {
+                throw new AssertionError("Falló cancelación antes del primer fragmento " + stopped);
+            }
+
+            var response = new Callback(false);
+            int status = bridge.generate(file, prompts, 2048, 40, 2, 3, 1234, metrics, response);
+            if ((status != 0 && status != 1) || !response.phases.equals(List.of(1, 2, 3, 4)) ||
+                metrics[7] != 512 || response.output.toString(StandardCharsets.UTF_8).isBlank()) {
+                throw new AssertionError("Falló el inicio de Nanbeige " + status);
+            }
+            System.out.println(response.output.toString(StandardCharsets.UTF_8));
+            System.out.println("IA_METRICS=" + java.util.Arrays.toString(metrics));
+            System.out.println("Fases, cancelación durante el prefill y límite inicial verificados");
             return;
         }
         if (args.length == 3 && args[0].equals("--stability")) {

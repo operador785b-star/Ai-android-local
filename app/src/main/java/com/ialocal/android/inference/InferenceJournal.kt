@@ -7,13 +7,22 @@ import org.json.JSONObject
 class InferenceJournal(context: Context) {
     private val prefs = context.getSharedPreferences("inference-journal", Context.MODE_PRIVATE)
 
-    fun start(model: String, settings: InferenceSettings): Long {
+    fun start(model: String, settings: InferenceSettings, modelBytes: Long? = null): Long {
         val id = System.currentTimeMillis()
         write((read() + JSONObject()
             .put("id", id).put("modelo", model)
+            .put("modelo_bytes", modelBytes)
             .put("contexto", settings.contextTokens).put("hilos", settings.threads)
+            .put("etapa", InferencePhase.LOADING_MODEL.name)
             .put("resultado", "EN_CURSO")).takeLast(16))
         return id
+    }
+
+    fun updatePhase(id: Long, phase: InferencePhase) {
+        val records = read()
+        val record = records.firstOrNull { it.optLong("id") == id } ?: return
+        record.put("etapa", phase.name)
+        write(records)
     }
 
     fun finish(id: Long, outcome: String, metrics: InferenceMetrics?) {
@@ -26,6 +35,7 @@ class InferenceJournal(context: Context) {
                 .put("total_ms", metrics.totalMs)
                 .put("primer_fragmento_ms", metrics.firstPieceMs.takeIf { it >= 0 } ?: JSONObject.NULL)
                 .put("pico_rss_proceso_kib", metrics.processPeakRssKiB)
+                .put("contexto_motor", metrics.effectiveContext.takeIf { it > 0 } ?: JSONObject.NULL)
                 .put("codigo_motor", metrics.code)
                 .put("tokens_por_segundo", metrics.tokensPerSecond ?: JSONObject.NULL)
         }
