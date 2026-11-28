@@ -1,0 +1,11 @@
+# Corpus español del piloto
+
+Los textos de `examples.jsonl` y `holdout.jsonl` se redactaron específicamente para IA Local Android. Se ofrecen bajo [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/legalcode.es). No contienen chats de usuarios ni material extraído de benchmarks públicos. La licencia de los pesos de Liquid AI se aplica por separado.
+
+Hay 23 pares de instrucción y respuesta para entrenamiento, seis para validación y 35 casos independientes para evaluación. Una familia de problemas pertenece a una única partición. Una semilla fija el orden de los ejemplos dentro de entrenamiento. Los campos de procedencia se pueden seguir desde el archivo y las familias hasta los SHA-256 incluidos en los informes. `corpus.py` comprueba particiones, familias e instrucciones normalizadas, también contra los bancos anteriores del repositorio. Esta comprobación cubre el material del proyecto. Liquid AI no publica una lista exhaustiva de su preentrenamiento.
+
+El corpus incluye soluciones de aritmética, álgebra, programación y lógica, explicaciones educativas, formatos, límites de acceso a datos y peticiones que requieren aclaración. La validación con pérdida media por ejemplo permite elegir un checkpoint antes de abrir los resultados finales. Al ampliar el corpus, añade solo a entrenamiento o a una nueva partición de validación. Reserva familias nuevas para la siguiente evaluación independiente.
+
+El banco exige una respuesta corta cuando así lo dice el enunciado. Una solución numérica correcta con texto extra puede fallar el criterio exacto. Se conservan las respuestas completas. Los cuatro casos de código ejecutan vectores con enteros positivos, negativos y cero según la función. El verificador acepta un subconjunto de expresiones puras definido en `evaluation/functions_es.py`. Para Kotlin usa el compilador y para JavaScript usa Node. La incertidumbre y la conversación tienen indicadores léxicos preliminares. Para juzgar español, revisa las respuestas sin ver qué modelo las produjo y puntúa 0–2 en corrección, utilidad, claridad e invenciones. Un acierto por expresión regular por sí solo no certifica esos atributos.
+
+La próxima evaluación debe incluir más problemas por área y pruebas privadas recién redactadas. Las evaluaciones publicadas pasan a ser pruebas de regresión.

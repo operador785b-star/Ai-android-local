@@ -1,0 +1,10 @@
+# Versiones de la receta oficial de Liquid AI para LFM3.
+torch==2.14.1
+transformers==5.20.2
+peft==0.21.2
+trl==1.16.0
+accelerate==1.15.0
+datasets==5.1.0
+huggingface-hub==2.3.0
+tokenizers==0.23.3
+safetensors==0.8.0

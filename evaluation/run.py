@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate app JNI inference with real GGUF weights. Generated code is parsed, never run."""
+"""Evaluate app JNI inference with real GGUF weights. Arithmetic functions are tested within a restricted expression subset."""
 import argparse
 import ast
 import csv
@@ -63,6 +63,9 @@ def json_scores(answer, expected):
 def verify(case, answer):
     text, expected = answer.strip(), case["expect"]
     kind = case["check"]
+    if kind == "function":
+        from functions_es import function_passes
+        return function_passes(answer, expected)
     if kind == "exact":
         return text.casefold() == expected.casefold()
     if kind == "literal":
