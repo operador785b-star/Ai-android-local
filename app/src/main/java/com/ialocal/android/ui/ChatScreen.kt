@@ -75,6 +75,7 @@ import com.ialocal.android.chat.LiveAnswer
 import com.ialocal.android.chat.Message
 import com.ialocal.android.chat.MessageState
 import com.ialocal.android.chat.Role
+import com.ialocal.android.inference.InferencePhase
 import kotlinx.coroutines.launch
 
 @Composable
@@ -114,7 +115,7 @@ internal fun ChatScreen(
                     items(state.messages.asReversed(), key = { it.id }) { item ->
                         val body = live?.takeIf { it.id == item.id }?.body ?: item.body
                         MessageItem(
-                            item, body,
+                            item, body, state.inferencePhase,
                             if (reduce) Modifier else Modifier.animateItem(
                                 fadeInSpec = tween(190), placementSpec = null, fadeOutSpec = null
                             )
@@ -294,7 +295,7 @@ private fun Welcome(onSuggestion: (String) -> Unit) {
 
 
 @Composable
-private fun MessageItem(message: Message, body: String, modifier: Modifier) {
+private fun MessageItem(message: Message, body: String, phase: InferencePhase?, modifier: Modifier) {
     val colors = LocalGlass.current
     if (message.role == Role.USER) {
         Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
@@ -333,7 +334,13 @@ private fun MessageItem(message: Message, body: String, modifier: Modifier) {
         }
         val status = when (message.state) {
             MessageState.COMPLETE -> null
-            MessageState.GENERATING -> if (body.isBlank()) "Preparando respuesta…" else "Generando…"
+            MessageState.GENERATING -> when (phase) {
+                InferencePhase.LOADING_MODEL -> "Cargando modelo…"
+                InferencePhase.CREATING_CONTEXT -> "Preparando memoria…"
+                InferencePhase.PROCESSING_PROMPT -> "Procesando tu mensaje…"
+                InferencePhase.GENERATING_TEXT -> "Generando…"
+                null -> "Preparando respuesta…"
+            }
             MessageState.STOPPED -> "Respuesta detenida"
             MessageState.INTERRUPTED -> "Respuesta interrumpida"
             MessageState.LIMITED -> "Límite de salida alcanzado"

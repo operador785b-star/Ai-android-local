@@ -1,0 +1,182 @@
+{
+  "profile": "lfm3",
+  "sha256": "3793e1e6e2266919d6e015287221b41100175a98eddaba92e111aed3b05c93c4",
+  "seed": 1234,
+  "context": 2048,
+  "threads": 2,
+  "suite_sha256": "e5c4fd5bf5e32ca7427b96f81248495140dc01ed67ff06f785ff14a24281e204",
+  "passed": 4,
+  "total": 10,
+  "results": [
+    {
+      "id": "codigo-fibonacci",
+      "category": "programacion",
+      "passed": false,
+      "answer": "```python\ndef fibonacci(n):\n    if n == 0:\n        return 0\n    a, b = 0, 1\n    for _ in range(2, n + 1):\n        a, b = b, a + b\n    return b if n > 1 else 1\n```\n\n**Explicación:**\n- Para `n = 0` devuelve `0`.\n- Para `n = 1` devuelve `1`.\n- Para `n > 1` se itera",
+      "metrics": {
+        "tokens_entrada": 123,
+        "tokens_salida": 110,
+        "total_ms": 10652,
+        "primer_fragmento_ms": 5525,
+        "decodificacion_ms": 5126,
+        "pico_rss_proceso_kib": 1928364,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 21.26
+      },
+      "error": null
+    },
+    {
+      "id": "bug-acumulador",
+      "category": "depuracion",
+      "passed": false,
+      "answer": "```python\ndef total(xs):\n    s = 0\n    for x in xs:\n        s = x\n    return s\n```",
+      "metrics": {
+        "tokens_entrada": 131,
+        "tokens_salida": 31,
+        "total_ms": 5172,
+        "primer_fragmento_ms": 3701,
+        "decodificacion_ms": 1470,
+        "pico_rss_proceso_kib": 1928800,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 20.41
+      },
+      "error": null
+    },
+    {
+      "id": "capital-peru",
+      "category": "conocimiento",
+      "passed": false,
+      "answer": "Lima\n```Lima\n```\nEl usuario pide solo el nombre de la ciudad. Responde con solo \"Lima\". No necesita formato de código. Usa blo",
+      "metrics": {
+        "tokens_entrada": 94,
+        "tokens_salida": 36,
+        "total_ms": 4426,
+        "primer_fragmento_ms": 2857,
+        "decodificacion_ms": 1568,
+        "pico_rss_proceso_kib": 1928724,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 22.32
+      },
+      "error": null
+    },
+    {
+      "id": "agua",
+      "category": "conocimiento",
+      "passed": false,
+      "answer": "0\nLa temperatura a la que el agua pura se congela a presión atmosférica normal es 0 °C. Sin embargo, en la",
+      "metrics": {
+        "tokens_entrada": 107,
+        "tokens_salida": 32,
+        "total_ms": 5583,
+        "primer_fragmento_ms": 4084,
+        "decodificacion_ms": 1499,
+        "pico_rss_proceso_kib": 1928748,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 20.68
+      },
+      "error": null
+    },
+    {
+      "id": "silogismo",
+      "category": "logica",
+      "passed": true,
+      "answer": "No",
+      "metrics": {
+        "tokens_entrada": 123,
+        "tokens_salida": 1,
+        "total_ms": 3340,
+        "primer_fragmento_ms": 3218,
+        "decodificacion_ms": 122,
+        "pico_rss_proceso_kib": 1928612,
+        "codigo_motor": 0,
+        "tokens_por_segundo": null
+      },
+      "error": null
+    },
+    {
+      "id": "ecuacion",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "Para resolver la ecuación:\n\n3(x - 2) + 8 = 20\n\nPrimero, distribuye el 3:\n3x - 6 + 8 = 20",
+      "metrics": {
+        "tokens_entrada": 101,
+        "tokens_salida": 40,
+        "total_ms": 5105,
+        "primer_fragmento_ms": 3302,
+        "decodificacion_ms": 1803,
+        "pico_rss_proceso_kib": 1928588,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 21.63
+      },
+      "error": null
+    },
+    {
+      "id": "dos-lineas",
+      "category": "instrucciones",
+      "passed": true,
+      "answer": "AZUL\nVERDE",
+      "metrics": {
+        "tokens_entrada": 102,
+        "tokens_salida": 5,
+        "total_ms": 2995,
+        "primer_fragmento_ms": 2703,
+        "decodificacion_ms": 292,
+        "pico_rss_proceso_kib": 1928560,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 13.7
+      },
+      "error": null
+    },
+    {
+      "id": "markdown",
+      "category": "markdown",
+      "passed": false,
+      "answer": "| fruta | cantidad |\n|-------|---------|\n| pera   | 2       |\n| uva    | 4       |\n\n```markdown\n| fruta | cantidad |\n|-------|---------|\n| pera   | 2       |\n| uva    | 4       |\n```",
+      "metrics": {
+        "tokens_entrada": 109,
+        "tokens_salida": 56,
+        "total_ms": 5383,
+        "primer_fragmento_ms": 2889,
+        "decodificacion_ms": 2493,
+        "pico_rss_proceso_kib": 1929040,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 22.06
+      },
+      "error": null
+    },
+    {
+      "id": "csv",
+      "category": "csv",
+      "passed": true,
+      "answer": "ciudad,altitud\nLima,154",
+      "metrics": {
+        "tokens_entrada": 109,
+        "tokens_salida": 10,
+        "total_ms": 3125,
+        "primer_fragmento_ms": 2610,
+        "decodificacion_ms": 515,
+        "pico_rss_proceso_kib": 1928492,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 17.48
+      },
+      "error": null
+    },
+    {
+      "id": "json",
+      "category": "json",
+      "passed": true,
+      "answer": "{\n  \"nombre\": \"Ana\",\n  \"edad\": 23,\n  \"activo\": true\n}",
+      "metrics": {
+        "tokens_entrada": 115,
+        "tokens_salida": 24,
+        "total_ms": 4250,
+        "primer_fragmento_ms": 3040,
+        "decodificacion_ms": 1210,
+        "pico_rss_proceso_kib": 1928656,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 19.01
+      },
+      "error": null
+    }
+  ]
+}

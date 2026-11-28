@@ -1,0 +1,1 @@
+{"id":"recuperar-contexto","category":"historial","history":[{"user":"Guarda para esta conversación el código de mi cuaderno: BRUMA-58.","assistant":"El código de tu cuaderno es BRUMA-58."}],"prompt":"¿Cuál es el código de mi cuaderno? Responde solo con el código, sin ningún otro carácter.","check":"literal","expect":"BRUMA-58","max_tokens":32}

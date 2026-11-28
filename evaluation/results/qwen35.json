@@ -1,0 +1,182 @@
+{
+  "profile": "qwen35",
+  "sha256": "aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223",
+  "seed": 1234,
+  "context": 2048,
+  "threads": 2,
+  "suite_sha256": "e5c4fd5bf5e32ca7427b96f81248495140dc01ed67ff06f785ff14a24281e204",
+  "passed": 7,
+  "total": 10,
+  "results": [
+    {
+      "id": "codigo-fibonacci",
+      "category": "programacion",
+      "passed": false,
+      "answer": "```python\ndef fibonacci(n):\n    \"\"\"\n    Calcula el n-ésimo número de Fibonacci utilizando un bucle.\n    \n    Parámetros:\n        n (int): El índice para el que se desea calcular el número de Fibonacci.\n                 F(0) = 0, F(1) = 1\n    \n    Retorna:\n        int: El valor del número de Fibonacci correspondiente a n.\n    \"\"\"\n    if n == 0:\n        return 0\n    elif n == ",
+      "metrics": {
+        "tokens_entrada": 118,
+        "tokens_salida": 110,
+        "total_ms": 10320,
+        "primer_fragmento_ms": 3882,
+        "decodificacion_ms": 6438,
+        "pico_rss_proceso_kib": 1937720,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 16.93
+      },
+      "error": null
+    },
+    {
+      "id": "bug-acumulador",
+      "category": "depuracion",
+      "passed": true,
+      "answer": "```python\ndef total(xs):\n    s = 0\n    for x in xs:\n        s += x\n    return s\n```",
+      "metrics": {
+        "tokens_entrada": 126,
+        "tokens_salida": 31,
+        "total_ms": 4902,
+        "primer_fragmento_ms": 3179,
+        "decodificacion_ms": 1722,
+        "pico_rss_proceso_kib": 1937396,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 17.42
+      },
+      "error": null
+    },
+    {
+      "id": "capital-peru",
+      "category": "conocimiento",
+      "passed": true,
+      "answer": "Lima",
+      "metrics": {
+        "tokens_entrada": 93,
+        "tokens_salida": 2,
+        "total_ms": 2931,
+        "primer_fragmento_ms": 2733,
+        "decodificacion_ms": 197,
+        "pico_rss_proceso_kib": 1937324,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 5.08
+      },
+      "error": null
+    },
+    {
+      "id": "agua",
+      "category": "conocimiento",
+      "passed": true,
+      "answer": "0",
+      "metrics": {
+        "tokens_entrada": 101,
+        "tokens_salida": 1,
+        "total_ms": 2445,
+        "primer_fragmento_ms": 2312,
+        "decodificacion_ms": 132,
+        "pico_rss_proceso_kib": 1937660,
+        "codigo_motor": 0,
+        "tokens_por_segundo": null
+      },
+      "error": null
+    },
+    {
+      "id": "silogismo",
+      "category": "logica",
+      "passed": true,
+      "answer": "No",
+      "metrics": {
+        "tokens_entrada": 112,
+        "tokens_salida": 1,
+        "total_ms": 3236,
+        "primer_fragmento_ms": 3102,
+        "decodificacion_ms": 133,
+        "pico_rss_proceso_kib": 1937272,
+        "codigo_motor": 0,
+        "tokens_por_segundo": null
+      },
+      "error": null
+    },
+    {
+      "id": "ecuacion",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "2\n\n**Solución paso a paso:**\n1.  Desplaza el término en paréntesis hacia adelante: $3x - 6 + 8 = 20$\n",
+      "metrics": {
+        "tokens_entrada": 98,
+        "tokens_salida": 40,
+        "total_ms": 4545,
+        "primer_fragmento_ms": 2316,
+        "decodificacion_ms": 2229,
+        "pico_rss_proceso_kib": 1937540,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 17.5
+      },
+      "error": null
+    },
+    {
+      "id": "dos-lineas",
+      "category": "instrucciones",
+      "passed": true,
+      "answer": "AZUL\nVERDE",
+      "metrics": {
+        "tokens_entrada": 99,
+        "tokens_salida": 5,
+        "total_ms": 2636,
+        "primer_fragmento_ms": 2267,
+        "decodificacion_ms": 368,
+        "pico_rss_proceso_kib": 1937332,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 10.87
+      },
+      "error": null
+    },
+    {
+      "id": "markdown",
+      "category": "markdown",
+      "passed": true,
+      "answer": "| fruta | cantidad |\n| :--- | :--- |\n| pera | 2 |\n| uva | 4 |",
+      "metrics": {
+        "tokens_entrada": 103,
+        "tokens_salida": 28,
+        "total_ms": 4272,
+        "primer_fragmento_ms": 2522,
+        "decodificacion_ms": 1750,
+        "pico_rss_proceso_kib": 1937344,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 15.43
+      },
+      "error": null
+    },
+    {
+      "id": "csv",
+      "category": "csv",
+      "passed": false,
+      "answer": "Lima,154",
+      "metrics": {
+        "tokens_entrada": 106,
+        "tokens_salida": 6,
+        "total_ms": 2756,
+        "primer_fragmento_ms": 2365,
+        "decodificacion_ms": 390,
+        "pico_rss_proceso_kib": 1937536,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 12.82
+      },
+      "error": null
+    },
+    {
+      "id": "json",
+      "category": "json",
+      "passed": true,
+      "answer": "{\"nombre\":\"Ana\",\"edad\":23,\"activo\":true}",
+      "metrics": {
+        "tokens_entrada": 111,
+        "tokens_salida": 14,
+        "total_ms": 3750,
+        "primer_fragmento_ms": 2912,
+        "decodificacion_ms": 838,
+        "pico_rss_proceso_kib": 1937700,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 15.51
+      },
+      "error": null
+    }
+  ]
+}

@@ -5,12 +5,20 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Etiqueta del borrador de GitHub Releases
+        type: string
+      apk_run_id:
+        description: ID de la compilación aprobada que contiene ambos APK
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   build:
+    if: github.event_name != 'workflow_dispatch' || (inputs.release_tag == '' && inputs.apk_run_id == '')
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -80,3 +88,36 @@ jobs:
             app/build/reports/tests/
             app/build/reports/lint-results-debug.html
           if-no-files-found: ignore
+
+  publish:
+    if: github.event_name == 'workflow_dispatch' && (inputs.release_tag != '' || inputs.apk_run_id != '')
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Publicar los APK de la compilación aprobada
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          APK_RUN_ID: ${{ inputs.apk_run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ && "$APK_RUN_ID" =~ ^[0-9]+$ ]]
+          run=$(gh api "repos/$GH_REPO/actions/runs/$APK_RUN_ID")
+          revision=$(jq -er --arg repo "$GH_REPO" '
+            select(.conclusion == "success" and .head_repository.full_name == $repo
+              and .path == ".github/workflows/android.yml") | .head_sha' <<< "$run")
+          release=$(gh release view "$RELEASE_TAG" --json isDraft,targetCommitish)
+          jq -e --arg revision "$revision" '.isDraft and .targetCommitish == $revision' <<< "$release" >/dev/null
+
+          staging=$(mktemp -d)
+          gh run download "$APK_RUN_ID" --name IA-Local-Android-ARM64 --dir "$staging/standard"
+          gh run download "$APK_RUN_ID" --name IA-Local-Android-vista-previa-ARM64 --dir "$staging/preview"
+          (cd "$staging/standard" && sha256sum --check SHA256SUMS)
+          (cd "$staging/preview" && sha256sum --check SHA256SUMS)
+          gh release upload "$RELEASE_TAG" \
+            "$staging/standard/IA-Local-Android.apk" \
+            "$staging/preview/IA-Local-Android-vista-previa.apk"
+          gh release edit "$RELEASE_TAG" --draft=false

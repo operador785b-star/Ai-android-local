@@ -2,14 +2,21 @@ package com.ialocal.android.chat
 
 import android.app.Application
 import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
 import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ialocal.android.inference.GenerationEnd
 import com.ialocal.android.inference.GenerationRequest
+import com.ialocal.android.inference.EngineProfile
 import com.ialocal.android.inference.InferenceException
+import com.ialocal.android.inference.InferenceJournal
+import com.ialocal.android.inference.InferenceMetrics
+import com.ialocal.android.inference.InferencePhase
 import com.ialocal.android.inference.InferenceSettings
 import com.ialocal.android.inference.LlamaEngine
+import com.ialocal.android.inference.PerformanceMode
 import com.ialocal.android.model.InstalledModel
 import com.ialocal.android.model.ModelException
 import com.ialocal.android.model.ModelStore
@@ -34,9 +41,11 @@ data class ChatUiState(
     val models: List<InstalledModel> = emptyList(),
     val activeModel: InstalledModel? = null,
     val settings: InferenceSettings = InferenceSettings(),
+    val diagnostics: String = "",
     val appearance: AppearanceSettings = AppearanceSettings(),
     val loading: Boolean = true,
     val generating: Boolean = false,
+    val inferencePhase: InferencePhase? = null,
     val stopping: Boolean = false,
     val transfer: TransferProgress? = null,
     val notice: String? = null
@@ -46,6 +55,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     private val chats = ChatStore(app)
     private val models = ModelStore(app)
     private val engine = LlamaEngine()
+    private val journal = InferenceJournal(app)
+    private val power = app.getSystemService(PowerManager::class.java)
     private val prefs = app.getSharedPreferences("preferences", Application.MODE_PRIVATE)
     private val _state = MutableStateFlow(ChatUiState(
         appearance = AppearanceSettings(
@@ -65,6 +76,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 withContext(Dispatchers.IO) {
                     chats.recoverInterrupted()
+                    journal.recover()
+                    _state.update { it.copy(diagnostics = journal.report()) }
                     models.discardPartialFiles()
                 }
                 val saved = prefs.getLong("chat", 0L).takeIf { it > 0 }
@@ -73,8 +86,11 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 val context = prefs.getInt("context", 2048).takeIf { it in InferenceSettings.contexts } ?: 2048
                 val output = prefs.getInt("output", 512)
                     .takeIf { it in InferenceSettings.outputs && it < context } ?: 512
-                val threads = prefs.getInt("threads", 4).takeIf { it in InferenceSettings.threadCounts } ?: 4
-                _state.update { it.copy(settings = InferenceSettings(context, output, threads)) }
+                val defaults = InferenceSettings.DEFAULT_THREADS
+                val threads = prefs.getInt("threads", defaults).takeIf { it in InferenceSettings.threadCounts } ?: defaults
+                val mode = PerformanceMode.entries.firstOrNull { it.name == prefs.getString("performance-mode", null) }
+                    ?: PerformanceMode.EQUILIBRADO
+                _state.update { it.copy(settings = InferenceSettings(context, output, threads, mode)) }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -86,20 +102,32 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun send(raw: String) {
-        val text = raw.trim()
+        val input = parseChatInput(raw)
+        val text = input.prompt
         val snapshot = _state.value
         val model = snapshot.activeModel ?: return
         val profile = model.profile ?: return
-        if (snapshot.loading || snapshot.generating || snapshot.transfer != null || text.isBlank()) return
+        if (snapshot.loading || snapshot.generating || snapshot.transfer != null) return
+        if (input.jsonObject && profile != EngineProfile.LFM3) {
+            notice("Activa LFM3 para usar el comando /json.")
+            return
+        }
+        if (text.isBlank()) {
+            if (input.jsonObject) notice("Escribe qué datos quieres después de /json.")
+            return
+        }
         if (text.length > MAX_MESSAGE_CHARS) {
             notice("El mensaje admite hasta ${MAX_MESSAGE_CHARS} caracteres.")
             return
         }
-        _state.update { it.copy(generating = true, stopping = false) }
+        _state.update { it.copy(generating = true, stopping = false, inferencePhase = InferencePhase.LOADING_MODEL) }
         generation = viewModelScope.launch {
             var turn: Turn? = null
             val body = StringBuilder()
             var end = MessageState.ERROR
+            var runId: Long? = null
+            var metrics: InferenceMetrics? = null
+            var cancellation: String? = null
             try {
                 withContext(NonCancellable) {
                     turn = withContext(Dispatchers.IO) { chats.beginTurn(snapshot.selectedChat, text) }
@@ -108,10 +136,27 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 ensureActive()
                 val currentTurn = checkNotNull(turn)
                 val history = withContext(Dispatchers.IO) { chats.history(currentTurn) }
+                val thermal = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) power?.currentThermalStatus else null
+                val reduced = power?.isPowerSaveMode == true || (thermal ?: 0) >= PowerManager.THERMAL_STATUS_SEVERE
+                val threads = if (reduced) minOf(snapshot.settings.threads, InferenceSettings.DEFAULT_THREADS)
+                    else snapshot.settings.threads
                 var lastPaint = 0L
                 var lastSave = SystemClock.elapsedRealtime()
+                withContext(NonCancellable + Dispatchers.IO) {
+                    runId = journal.start(model.name, snapshot.settings, model.file.length(), threads, thermal, input.jsonObject)
+                    _state.update { it.copy(diagnostics = journal.report()) }
+                }
                 val result = engine.generate(
-                    GenerationRequest(model.file, history, text, snapshot.settings, profile)
+                    GenerationRequest(model.file, history, text, snapshot.settings, profile, currentTurn.chatId, threads,
+                        jsonObject = input.jsonObject),
+                    onMetrics = { metrics = it },
+                    onPhase = { phase ->
+                        if (_state.value.inferencePhase != phase) {
+                            runId?.let { journal.updatePhase(it, phase) }
+                            val report = journal.report()
+                            _state.update { it.copy(inferencePhase = phase, diagnostics = report) }
+                        }
+                    }
                 ) { fragment ->
                     body.append(fragment)
                     val now = SystemClock.elapsedRealtime()
@@ -134,6 +179,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 }
             } catch (cancelled: CancellationException) {
                 end = MessageState.STOPPED
+                cancellation = if (_state.value.stopping) "BOTON_DETENER" else "CICLO_DE_VIDA"
                 throw cancelled
             } catch (error: InferenceException) {
                 notice(error.message ?: "Falló la generación.")
@@ -142,6 +188,13 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             } finally {
                 try {
                     withContext(NonCancellable) {
+                        runId?.let { id ->
+                            val report = withContext(Dispatchers.IO) {
+                                journal.finish(id, end.name, metrics, cancellation)
+                                journal.report()
+                            }
+                            _state.update { it.copy(diagnostics = report) }
+                        }
                         turn?.let { saved ->
                             withContext(Dispatchers.IO) {
                                 chats.saveAnswer(saved.answerId, body.toString(), end)
@@ -153,7 +206,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                     notice("No se pudo actualizar el historial.")
                 } finally {
                     _live.value = null
-                    _state.update { it.copy(generating = false, stopping = false) }
+                    _state.update { it.copy(generating = false, stopping = false, inferencePhase = null) }
                     generation = null
                 }
             }
@@ -197,8 +250,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         models.download(sha256, it)
     }
 
-    fun importModel(uri: Uri, name: String, hash: String) = startTransfer("Importando modelo") {
-        models.import(uri, name, hash, it)
+    fun importModel(uri: Uri, name: String) = startTransfer("Importando modelo") {
+        models.import(uri, name, it)
     }
 
     private fun startTransfer(
@@ -209,10 +262,10 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         transfer = viewModelScope.launch {
             var installedModel: InstalledModel? = null
             try {
+                engine.release()
                 installedModel = work { bytes, total ->
                     _state.update { it.copy(transfer = TransferProgress(label, bytes, total)) }
                 }
-                notice("Modelo verificado y listo para usar.")
             } catch (cancelled: CancellationException) {
                 notice("Transferencia cancelada.")
                 throw cancelled
@@ -222,9 +275,15 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 notice("No se pudo transferir el modelo. Comprueba la conexión, el archivo y el espacio disponible.")
             } finally {
                 withContext(NonCancellable) {
-                    refreshModels(installedModel?.sha256 ?: _state.value.activeModel?.sha256)
-                    _state.update { it.copy(transfer = null) }
-                    transfer = null
+                    try {
+                        refreshModels(installedModel?.sha256 ?: _state.value.activeModel?.sha256)
+                        if (installedModel != null) notice("Modelo en uso. Vuelve al chat y escribe tu mensaje.")
+                    } catch (_: Exception) {
+                        notice("No se pudo actualizar la biblioteca. Vuelve a abrir la aplicación.")
+                    } finally {
+                        _state.update { it.copy(transfer = null) }
+                        transfer = null
+                    }
                 }
             }
         }
@@ -235,6 +294,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     fun activateModel(hash: String) {
         if (!canChangeModel()) return
         val model = _state.value.models.firstOrNull { it.sha256 == hash && it.profile != null } ?: return
+        if (_state.value.activeModel?.sha256 != model.sha256) engine.releaseWhenIdle()
         prefs.edit().putString("model", model.sha256).apply()
         _state.update { it.copy(activeModel = model) }
     }
@@ -244,6 +304,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(transfer = TransferProgress("Eliminando modelo")) }
         viewModelScope.launch {
             try {
+                if (_state.value.activeModel?.sha256 == model.sha256) engine.release()
                 withContext(Dispatchers.IO) { models.delete(model) }
                 refreshModels(_state.value.activeModel?.sha256)
             } catch (cancelled: CancellationException) {
@@ -261,7 +322,15 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     fun configure(value: InferenceSettings) {
         _state.update { it.copy(settings = value) }
         prefs.edit().putInt("context", value.contextTokens)
-            .putInt("output", value.outputTokens).putInt("threads", value.threads).apply()
+            .putInt("output", value.outputTokens).putInt("threads", value.threads)
+            .putString("performance-mode", value.mode.name).apply()
+    }
+
+    fun releaseEngineWhenIdle() = engine.releaseWhenIdle()
+
+    override fun onCleared() {
+        engine.close()
+        super.onCleared()
     }
 
     fun configureAppearance(value: AppearanceSettings) {

@@ -31,6 +31,9 @@ import com.ialocal.android.chat.ChatStore
 import com.ialocal.android.chat.ChatViewModel
 import com.ialocal.android.chat.MessageState
 import com.ialocal.android.ui.LocalApp
+import com.ialocal.android.inference.InferenceJournal
+import com.ialocal.android.inference.InferenceSettings
+import com.ialocal.android.inference.PerformanceMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -58,6 +61,10 @@ class GlassPreviewTest {
         ui.onNodeWithText("Apariencia").assertIsDisplayed()
         ui.onNodeWithContentDescription("Reducir animaciones").assertIsOn()
         capture("02-ajustes-oscuro")
+        ui.onNodeWithText("Económico").performClick()
+        assertEquals(PerformanceMode.ECONOMICO.defaults(), vm.state.value.settings)
+        ui.onNodeWithText("Equilibrado").performClick()
+        assertEquals(PerformanceMode.EQUILIBRADO.defaults(), vm.state.value.settings)
         ui.onNodeWithText("Claro").performClick()
         assertEquals(AppearanceMode.LIGHT, vm.state.value.appearance.mode)
         capture("03-ajustes-claro")
@@ -67,12 +74,15 @@ class GlassPreviewTest {
         capture("04-chat-claro")
         ui.onNodeWithText("Configurar modelo").performClick()
         ui.onNodeWithText("Biblioteca local").assertIsDisplayed()
+        ui.onNodeWithText("Recomendado para empezar. Se activa al terminar la descarga.").assertIsDisplayed()
         capture("05-modelos-claro")
-        ui.onNodeWithTag("biblioteca-modelos").performScrollToNode(hasText("Requiere un motor compatible con lfm3."))
-        ui.onNodeWithText("Requiere un motor compatible con lfm3.").assertIsDisplayed()
-        ui.onNodeWithTag("biblioteca-modelos").performScrollToNode(hasText("Requiere un motor compatible con nanbeige."))
-        ui.onNodeWithText("Requiere un motor compatible con nanbeige.").assertIsDisplayed()
-        capture("08-candidatos-claro")
+        ui.onNodeWithTag("biblioteca-modelos").performScrollToNode(hasText("Descargar Liquid AI LFM3-1.7B"))
+        ui.onNodeWithText("Descargar Liquid AI LFM3-1.7B").assertIsDisplayed()
+        ui.onNodeWithTag("biblioteca-modelos").performScrollToNode(hasText("Descargar Nanbeige 4.2 3B"))
+        ui.onNodeWithText("Descargar Nanbeige 4.2 3B").assertIsDisplayed()
+        capture("08-modelos-disponibles-claro")
+        ui.onNodeWithTag("biblioteca-modelos").performScrollToNode(hasText("Importar GGUF"))
+        ui.onNodeWithText("Archivo GGUF local").assertIsDisplayed()
         ui.onNodeWithContentDescription("Volver al chat").performClick()
         ui.onNodeWithContentDescription("Ajustes").performClick()
         ui.onNodeWithText("Oscuro").performClick()
@@ -137,11 +147,13 @@ class GlassPreviewTest {
     private fun startApp(seed: (Application) -> Unit = {}): ChatViewModel {
         val app = ApplicationProvider.getApplicationContext<Application>()
         seed(app)
+        InferenceJournal(app).start("Diagnóstico de prueba", InferenceSettings())
         app.getSharedPreferences("preferences", Application.MODE_PRIVATE).edit()
             .putString("appearance", AppearanceMode.DARK.name).putBoolean("reduce_motion", true).commit()
         val vm = ui.runOnUiThread { ViewModelProvider(ui.activity)[ChatViewModel::class.java] }
         ui.setContent { LocalApp(vm) }
         ui.waitUntil(10_000) { !vm.state.value.loading }
+        assertTrue(vm.state.value.diagnostics.contains("INTERRUMPIDA"))
         return vm
     }
 

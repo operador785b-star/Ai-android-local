@@ -1,0 +1,2 @@
+{"id":"saludo-inicial","category":"conversacion","prompt":"Saluda en español con una sola palabra: Hola.","check":"literal","expect":"Hola","max_tokens":24}
+{"id":"emision-sostenida","category":"conversacion","prompt":"Explica en español cómo se forman las nubes. Escribe un párrafo de entre 55 y 75 palabras y omite el título.","check":"regex","expect":"^(?:\\S+\\s+){54,74}\\S+$","max_tokens":160}

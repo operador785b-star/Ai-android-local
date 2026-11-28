@@ -1,0 +1,26 @@
+{
+  "identity": {
+    "revision": "1da06bec6a819da10b54c67e5c90972b46d81871",
+    "adapter_sha256": null,
+    "suite_sha256": "7504c05827ec6f20649cd0db974a2ac1f692a98b5c0745bbd983b1d6dec07460",
+    "backend": "transformers",
+    "sampling": "greedy",
+    "device": "cpu",
+    "dtype": "torch.bfloat16",
+    "threads": 2,
+    "system": "Eres IA Local, un asistente útil. Responde en el idioma del usuario salvo que indique lo contrario. Respeta el formato exacto que pida. Usa bloques Markdown para código si el usuario no pidió texto sin formato. Si falta información, dilo con claridad."
+  },
+  "results": [
+    {
+      "id": "matematicas-1",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "46",
+      "seconds": 1.320386429999985,
+      "output_tokens": 2,
+      "process_peak_rss_kib": 4069160
+    }
+  ],
+  "total": 1,
+  "passed": 0
+}

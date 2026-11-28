@@ -1,4 +1,6 @@
-# Evaluación de los candidatos GGUF
+# Evaluación de los candidatos GGUF · 0.3
+
+La [fase de inferencia 0.4](fase-inferencia.md) documenta el motor posterior y las pruebas con pesos reales.
 
 La app 0.3.0 mantiene llama.cpp **b8999** (commit `b97ebdc98f6053604a19d861c08d8087601b96e0`). El catálogo contiene los dos candidatos con revisión, tamaño y hash publicados. La descarga y la activación requieren un perfil habilitado en la app. La inspección local comprueba los metadatos del GGUF antes de incorporar un archivo verificado a la biblioteca; los Qwen3.5 de texto siguen siendo el perfil operativo. [Código de llama.cpp usado por Android](https://github.com/ggml-org/llama.cpp/tree/b97ebdc98f6053604a19d861c08d8087601b96e0)
 

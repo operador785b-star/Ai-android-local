@@ -1,0 +1,29 @@
+{
+  "profile": "lfm3",
+  "sha256": "3793e1e6e2266919d6e015287221b41100175a98eddaba92e111aed3b05c93c4",
+  "seed": 1234,
+  "context": 2048,
+  "threads": 2,
+  "suite_sha256": "6394ec710987cd2faa3d5cc97aabea16c56fec67d92802e4931ce9753b15167e",
+  "passed": 1,
+  "total": 1,
+  "results": [
+    {
+      "id": "recuperar-contexto",
+      "category": "historial",
+      "passed": true,
+      "answer": "BRUMA-58",
+      "metrics": {
+        "tokens_entrada": 140,
+        "tokens_salida": 5,
+        "total_ms": 3430,
+        "primer_fragmento_ms": 3119,
+        "decodificacion_ms": 311,
+        "pico_rss_proceso_kib": 1928588,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 12.86
+      },
+      "error": null
+    }
+  ]
+}

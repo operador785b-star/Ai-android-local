@@ -1,0 +1,621 @@
+{
+  "profile": "lfm3",
+  "sha256": "3793e1e6e2266919d6e015287221b41100175a98eddaba92e111aed3b05c93c4",
+  "seed": 1234,
+  "context": 2048,
+  "threads": 2,
+  "suite_sha256": "7504c05827ec6f20649cd0db974a2ac1f692a98b5c0745bbd983b1d6dec07460",
+  "system_sha256": "1ae4217c5e57c1bb89c58a6bb5c31fd74e4ef417e05aed217d66477ba18b6b08",
+  "json_object": false,
+  "passed": 11,
+  "total": 35,
+  "results": [
+    {
+      "id": "matematicas-1",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "58 + 39 = 97\n\n136 - 97 = 39\n\n39 euros faltan.\n\n39",
+      "metrics": {
+        "tokens_entrada": 109,
+        "tokens_salida": 23,
+        "total_ms": 4231,
+        "primer_fragmento_ms": 3388,
+        "decodificacion_ms": 797,
+        "pico_rss_proceso_kib": 1924144,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 27.6
+      },
+      "error": null
+    },
+    {
+      "id": "matematicas-2",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "84 * (1 - 1/4) = 84 * 3/4 = 63 litros. Luego recibe 11 litros:",
+      "metrics": {
+        "tokens_entrada": 111,
+        "tokens_salida": 32,
+        "total_ms": 4116,
+        "primer_fragmento_ms": 2883,
+        "decodificacion_ms": 1233,
+        "pico_rss_proceso_kib": 1924412,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 25.14
+      },
+      "error": null
+    },
+    {
+      "id": "matematicas-3",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "Para encontrar el costo de ocho cuadernos al mismo precio unitario, dividimos el total entre el número de cuadernos.\n\nTotal: 7,",
+      "metrics": {
+        "tokens_entrada": 111,
+        "tokens_salida": 32,
+        "total_ms": 3876,
+        "primer_fragmento_ms": 2592,
+        "decodificacion_ms": 1283,
+        "pico_rss_proceso_kib": 1924172,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 24.16
+      },
+      "error": null
+    },
+    {
+      "id": "matematicas-4",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "La máquina produce 45 piezas en 15 minutos, lo que significa una tasa de 45/15 = 3 piezas por minuto. En ",
+      "metrics": {
+        "tokens_entrada": 108,
+        "tokens_salida": 32,
+        "total_ms": 3817,
+        "primer_fragmento_ms": 2647,
+        "decodificacion_ms": 1170,
+        "pico_rss_proceso_kib": 1924120,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 26.5
+      },
+      "error": null
+    },
+    {
+      "id": "matematicas-5",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "54 / 90 = 0.6 km/min → 0.6 × 60 = 36 km/h\n\n36",
+      "metrics": {
+        "tokens_entrada": 104,
+        "tokens_salida": 26,
+        "total_ms": 3304,
+        "primer_fragmento_ms": 2329,
+        "decodificacion_ms": 938,
+        "pico_rss_proceso_kib": 1924332,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 26.65
+      },
+      "error": null
+    },
+    {
+      "id": "matematicas-6",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "El menor es 18.\n\nVerificación: 18 + 25 = 43, y 25 - 18 = 7. Correcto.\n\nMen",
+      "metrics": {
+        "tokens_entrada": 102,
+        "tokens_salida": 32,
+        "total_ms": 3603,
+        "primer_fragmento_ms": 2355,
+        "decodificacion_ms": 1247,
+        "pico_rss_proceso_kib": 1924100,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 24.86
+      },
+      "error": null
+    },
+    {
+      "id": "matematicas-7",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "El entero positivo es 11, ya que 11^2 = 121 y 121 - 9 = 112? No, revisemos:",
+      "metrics": {
+        "tokens_entrada": 98,
+        "tokens_salida": 32,
+        "total_ms": 4001,
+        "primer_fragmento_ms": 2897,
+        "decodificacion_ms": 1103,
+        "pico_rss_proceso_kib": 1924344,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 28.11
+      },
+      "error": null
+    },
+    {
+      "id": "matematicas-8",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "Cada objeto marca 23 kg. Hay cinco objetos. Peso total = 5 × 23 = 115 kg.\n\nPero la caja pesa",
+      "metrics": {
+        "tokens_entrada": 110,
+        "tokens_salida": 32,
+        "total_ms": 3814,
+        "primer_fragmento_ms": 2676,
+        "decodificacion_ms": 1138,
+        "pico_rss_proceso_kib": 1924128,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 27.24
+      },
+      "error": null
+    },
+    {
+      "id": "logica-9",
+      "category": "logica",
+      "passed": false,
+      "answer": "No. Los neros son lumes y ningún lume es tis. Por lo tanto, un nero no puede ser tis.",
+      "metrics": {
+        "tokens_entrada": 111,
+        "tokens_salida": 29,
+        "total_ms": 3644,
+        "primer_fragmento_ms": 2603,
+        "decodificacion_ms": 1004,
+        "pico_rss_proceso_kib": 1924192,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 27.89
+      },
+      "error": null
+    },
+    {
+      "id": "logica-10",
+      "category": "logica",
+      "passed": false,
+      "answer": "Ada supera a Berta, y Ciro supera a Ada. Por lo tanto, Ciro está en medio.\n\n**Ciro**",
+      "metrics": {
+        "tokens_entrada": 107,
+        "tokens_salida": 29,
+        "total_ms": 3897,
+        "primer_fragmento_ms": 2866,
+        "decodificacion_ms": 990,
+        "pico_rss_proceso_kib": 1924140,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 28.28
+      },
+      "error": null
+    },
+    {
+      "id": "logica-11",
+      "category": "logica",
+      "passed": false,
+      "answer": "5\n\nPara garantizar dos medias del mismo color sin mirar, necesitas sacar al menos 5 medias. Por el principio del palomar: con",
+      "metrics": {
+        "tokens_entrada": 115,
+        "tokens_salida": 32,
+        "total_ms": 3922,
+        "primer_fragmento_ms": 2712,
+        "decodificacion_ms": 1210,
+        "pico_rss_proceso_kib": 1924088,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 25.62
+      },
+      "error": null
+    },
+    {
+      "id": "logica-12",
+      "category": "logica",
+      "passed": false,
+      "answer": "30\n\nEl mínimo común múltiplo de 6 y 8 es 24, pero el problema dice \"ahora\" y \"sonaron juntos ahora",
+      "metrics": {
+        "tokens_entrada": 115,
+        "tokens_salida": 32,
+        "total_ms": 3847,
+        "primer_fragmento_ms": 2687,
+        "decodificacion_ms": 1160,
+        "pico_rss_proceso_kib": 1924144,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 26.72
+      },
+      "error": null
+    },
+    {
+      "id": "conocimiento-13",
+      "category": "conocimiento",
+      "passed": false,
+      "answer": "Japón. Kioto es una ciudad en Japón.",
+      "metrics": {
+        "tokens_entrada": 93,
+        "tokens_salida": 13,
+        "total_ms": 2891,
+        "primer_fragmento_ms": 2377,
+        "decodificacion_ms": 478,
+        "pico_rss_proceso_kib": 1924168,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 25.1
+      },
+      "error": null
+    },
+    {
+      "id": "conocimiento-14",
+      "category": "conocimiento",
+      "passed": true,
+      "answer": "Fe",
+      "metrics": {
+        "tokens_entrada": 106,
+        "tokens_salida": 1,
+        "total_ms": 2494,
+        "primer_fragmento_ms": 2451,
+        "decodificacion_ms": 0,
+        "pico_rss_proceso_kib": 1924140,
+        "codigo_motor": 0,
+        "tokens_por_segundo": null
+      },
+      "error": null
+    },
+    {
+      "id": "conocimiento-15",
+      "category": "conocimiento",
+      "passed": false,
+      "answer": "- Urano está entre Saturno y Neptuno en el sistema solar.\n\nEl planeta que está entre Saturno y Neptuno es **Urano**.",
+      "metrics": {
+        "tokens_entrada": 94,
+        "tokens_salida": 30,
+        "total_ms": 3717,
+        "primer_fragmento_ms": 2541,
+        "decodificacion_ms": 1139,
+        "pico_rss_proceso_kib": 1923872,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 25.46
+      },
+      "error": null
+    },
+    {
+      "id": "conocimiento-16",
+      "category": "conocimiento",
+      "passed": false,
+      "answer": "Inca. (Una sola palabra)",
+      "metrics": {
+        "tokens_entrada": 94,
+        "tokens_salida": 8,
+        "total_ms": 3134,
+        "primer_fragmento_ms": 2841,
+        "decodificacion_ms": 257,
+        "pico_rss_proceso_kib": 1924220,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 27.24
+      },
+      "error": null
+    },
+    {
+      "id": "conocimiento-17",
+      "category": "conocimiento",
+      "passed": false,
+      "answer": "El paso directo del estado sólido al gaseoso se llama **sublimación**. Solo el sustantivo.\n\nPor ejemplo: \"El agua",
+      "metrics": {
+        "tokens_entrada": 101,
+        "tokens_salida": 32,
+        "total_ms": 3779,
+        "primer_fragmento_ms": 2602,
+        "decodificacion_ms": 1176,
+        "pico_rss_proceso_kib": 1924228,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 26.36
+      },
+      "error": null
+    },
+    {
+      "id": "instrucciones-18",
+      "category": "instrucciones",
+      "passed": false,
+      "answer": "RAT\nM R A T\nEl usuario pide escribir las letras en orden inverso, sin espacios ni puntuación. La palabra dada es",
+      "metrics": {
+        "tokens_entrada": 99,
+        "tokens_salida": 32,
+        "total_ms": 3516,
+        "primer_fragmento_ms": 2385,
+        "decodificacion_ms": 1130,
+        "pico_rss_proceso_kib": 1924104,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 27.43
+      },
+      "error": null
+    },
+    {
+      "id": "instrucciones-19",
+      "category": "instrucciones",
+      "passed": true,
+      "answer": "café\ncafé",
+      "metrics": {
+        "tokens_entrada": 96,
+        "tokens_salida": 7,
+        "total_ms": 2571,
+        "primer_fragmento_ms": 2301,
+        "decodificacion_ms": 233,
+        "pico_rss_proceso_kib": 1924116,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 25.75
+      },
+      "error": null
+    },
+    {
+      "id": "instrucciones-20",
+      "category": "instrucciones",
+      "passed": false,
+      "answer": "a / n / o / s? Wait, let's sort them alphabetically: \"nube\", \"arco\", \"sol\". Alphabetically:",
+      "metrics": {
+        "tokens_entrada": 101,
+        "tokens_salida": 32,
+        "total_ms": 3941,
+        "primer_fragmento_ms": 2606,
+        "decodificacion_ms": 1334,
+        "pico_rss_proceso_kib": 1924184,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 23.24
+      },
+      "error": null
+    },
+    {
+      "id": "json-21",
+      "category": "json",
+      "passed": false,
+      "answer": "```json\n{\n  \"colores\": [\"rojo\", \"gris\"]\n}\n```",
+      "metrics": {
+        "tokens_entrada": 98,
+        "tokens_salida": 18,
+        "total_ms": 3159,
+        "primer_fragmento_ms": 2359,
+        "decodificacion_ms": 722,
+        "pico_rss_proceso_kib": 1924332,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 23.55
+      },
+      "error": null,
+      "json_checks": {
+        "format": false,
+        "values": true
+      }
+    },
+    {
+      "id": "json-22",
+      "category": "json",
+      "passed": false,
+      "answer": "```json\n{\n  \"precio\": 9,\n  \"descuento\": null\n}\n```",
+      "metrics": {
+        "tokens_entrada": 99,
+        "tokens_salida": 22,
+        "total_ms": 3718,
+        "primer_fragmento_ms": 2807,
+        "decodificacion_ms": 876,
+        "pico_rss_proceso_kib": 1924588,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 23.97
+      },
+      "error": null,
+      "json_checks": {
+        "format": false,
+        "values": true
+      }
+    },
+    {
+      "id": "json-23",
+      "category": "json",
+      "passed": false,
+      "answer": "```json\n{\n  \"motor\": {\n    \"activo\": false,\n    \"ciclos\": 4\n  }\n}\n```",
+      "metrics": {
+        "tokens_entrada": 103,
+        "tokens_salida": 30,
+        "total_ms": 4218,
+        "primer_fragmento_ms": 3052,
+        "decodificacion_ms": 1121,
+        "pico_rss_proceso_kib": 1924272,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 25.87
+      },
+      "error": null,
+      "json_checks": {
+        "format": false,
+        "values": true
+      }
+    },
+    {
+      "id": "csv-24",
+      "category": "csv",
+      "passed": false,
+      "answer": "```csv\nproducto,nota\npan,blanco, integral\n```\n\nNota: La entrada \"blanco, integral\" contiene un espacio después de la coma. El usuario dijo \"sin las comillas angulares\", pero no pide que elimine espacios. Mantengo el espacio tal cual está.\n\n```csv\nproducto,not",
+      "metrics": {
+        "tokens_entrada": 110,
+        "tokens_salida": 70,
+        "total_ms": 5397,
+        "primer_fragmento_ms": 2637,
+        "decodificacion_ms": 2759,
+        "pico_rss_proceso_kib": 1924044,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 25.01
+      },
+      "error": null
+    },
+    {
+      "id": "csv-25",
+      "category": "csv",
+      "passed": false,
+      "answer": "```csv\nx,y\n0,-1\n2,3\n```\n```",
+      "metrics": {
+        "tokens_entrada": 104,
+        "tokens_salida": 16,
+        "total_ms": 3726,
+        "primer_fragmento_ms": 2806,
+        "decodificacion_ms": 884,
+        "pico_rss_proceso_kib": 1924300,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 16.97
+      },
+      "error": null
+    },
+    {
+      "id": "markdown-26",
+      "category": "markdown",
+      "passed": true,
+      "answer": "| fase | minutos |\n|------|--------|\n| inicio | 5 |\n| cierre | 12 |",
+      "metrics": {
+        "tokens_entrada": 100,
+        "tokens_salida": 19,
+        "total_ms": 4809,
+        "primer_fragmento_ms": 3684,
+        "decodificacion_ms": 1079,
+        "pico_rss_proceso_kib": 1924420,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 16.68
+      },
+      "error": null
+    },
+    {
+      "id": "markdown-27",
+      "category": "markdown",
+      "passed": true,
+      "answer": "| idioma | saludo |\n|--------|--------|\n| italiano | ciao |\n| alemán | hallo |",
+      "metrics": {
+        "tokens_entrada": 106,
+        "tokens_salida": 21,
+        "total_ms": 4302,
+        "primer_fragmento_ms": 3445,
+        "decodificacion_ms": 820,
+        "pico_rss_proceso_kib": 1924172,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 24.39
+      },
+      "error": null
+    },
+    {
+      "id": "programacion-28",
+      "category": "programacion",
+      "passed": true,
+      "answer": "```python\ndef es_impar(n):\n    return n % 2 != 0\n```",
+      "metrics": {
+        "tokens_entrada": 117,
+        "tokens_salida": 21,
+        "total_ms": 3597,
+        "primer_fragmento_ms": 2799,
+        "decodificacion_ms": 760,
+        "pico_rss_proceso_kib": 1924256,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 26.32
+      },
+      "error": null
+    },
+    {
+      "id": "programacion-29",
+      "category": "programacion",
+      "passed": false,
+      "answer": "```kotlin\nfun expressionFun(quadrate: Int): Int {\n    return quadrate * quadrate\n}\n```\n\nEspera, la función se llama `expressionFun` y el parámetro es `quadrate`? El usuario dijo: \"En Kotlin escribe una función de expresión fun cuadrado(x: Int): Int que devuelva el cuadrado de x.\"\n\nEntonces la función debe ser `fun expressionFun(x: Int): Int { return x * x",
+      "metrics": {
+        "tokens_entrada": 107,
+        "tokens_salida": 100,
+        "total_ms": 6719,
+        "primer_fragmento_ms": 2732,
+        "decodificacion_ms": 3987,
+        "pico_rss_proceso_kib": 1924412,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 24.83
+      },
+      "error": null
+    },
+    {
+      "id": "programacion-30",
+      "category": "programacion",
+      "passed": true,
+      "answer": "```javascript\nfunction diferencia(a, b) {\n  return a - b;\n}\n```",
+      "metrics": {
+        "tokens_entrada": 101,
+        "tokens_salida": 18,
+        "total_ms": 3238,
+        "primer_fragmento_ms": 2544,
+        "decodificacion_ms": 659,
+        "pico_rss_proceso_kib": 1923884,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 25.8
+      },
+      "error": null
+    },
+    {
+      "id": "programacion-31",
+      "category": "programacion",
+      "passed": true,
+      "answer": "```python\ndef segundos(h, m):\n    return h * 3600 + m * 60\n```",
+      "metrics": {
+        "tokens_entrada": 106,
+        "tokens_salida": 24,
+        "total_ms": 3667,
+        "primer_fragmento_ms": 2588,
+        "decodificacion_ms": 1042,
+        "pico_rss_proceso_kib": 1924124,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 22.07
+      },
+      "error": null
+    },
+    {
+      "id": "incertidumbre-32",
+      "category": "incertidumbre",
+      "passed": true,
+      "answer": "Para orientarte necesito datos que no me has proporcionado. Sin el nombre de la estación de salida, el nombre del tren o el número de tren, no puedo determinar en qué andén saldrá. Por favor, indícamelo para poder ayudarte.",
+      "metrics": {
+        "tokens_entrada": 112,
+        "tokens_salida": 54,
+        "total_ms": 4612,
+        "primer_fragmento_ms": 2580,
+        "decodificacion_ms": 1991,
+        "pico_rss_proceso_kib": 1924164,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 26.62
+      },
+      "error": null
+    },
+    {
+      "id": "incertidumbre-33",
+      "category": "incertidumbre",
+      "passed": true,
+      "answer": "Para averiguar el peso de la caja cerrada que tienes en la mano, puedes seguir estos pasos:\n\n1. **Mide la caja**: Usa una balanza de cocina o un baladro. Coloca la caja en ella y anota el peso que muestra.\n\n2. **Comprueba si está vacía**: Si la caja está cerrada y no hay contenido visible, el peso que mides es el peso de la caja en sí misma.\n\n3. **Si tienes un peso aproximado**:",
+      "metrics": {
+        "tokens_entrada": 105,
+        "tokens_salida": 110,
+        "total_ms": 7072,
+        "primer_fragmento_ms": 2488,
+        "decodificacion_ms": 4583,
+        "pico_rss_proceso_kib": 1924080,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 23.78
+      },
+      "error": null
+    },
+    {
+      "id": "espanol-34",
+      "category": "espanol",
+      "passed": true,
+      "answer": "¡Hola! Es como guardar tu juguete antes de que se vaya. Si guardas un documento (como un cuento o un plan) antes de apagar el ordenador, no se pierde. Así, cuando quieras leerlo o usarlo después, ya está listo y seguro. Es como guardar tu dibujito en el cuaderno antes de irte a dormir. Así evitas que se olvide algo importante.\n\n**En resumen:** Guardar un",
+      "metrics": {
+        "tokens_entrada": 99,
+        "tokens_salida": 100,
+        "total_ms": 6212,
+        "primer_fragmento_ms": 2475,
+        "decodificacion_ms": 3736,
+        "pico_rss_proceso_kib": 1924112,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 26.5
+      },
+      "error": null
+    },
+    {
+      "id": "espanol-35",
+      "category": "espanol",
+      "passed": true,
+      "answer": "Claro, aquí tienes una sugerencia concreta para practicar hoy:\n\n**Escribe un resumen de tus respuestas anteriores** (como preguntas, respuestas y cualquier duda que hayas mencionado) y reescríbelo en una sola frase. Esto te ayudará a organizar tus pensamientos y a ver cómo te presentas de manera clara y concisa.\n\nEjemplo: *\"En mi entrevista, he respondido preguntas sobre mi experiencia laboral, mis metas profesionales y he mencionado",
+      "metrics": {
+        "tokens_entrada": 108,
+        "tokens_salida": 100,
+        "total_ms": 6741,
+        "primer_fragmento_ms": 2859,
+        "decodificacion_ms": 3882,
+        "pico_rss_proceso_kib": 1924088,
+        "codigo_motor": 1,
+        "tokens_por_segundo": 25.5
+      },
+      "error": null
+    }
+  ]
+}

@@ -176,9 +176,8 @@ private fun AppNavigation(vm: ChatViewModel, state: ChatUiState) {
         vm.dismissNotice(message)
     }
     var importName by rememberSaveable { mutableStateOf("") }
-    var importHash by rememberSaveable { mutableStateOf("") }
     val importFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) vm.importModel(uri, importName, importHash)
+        if (uri != null) vm.importModel(uri, importName)
     }
     val drawerShape = RoundedCornerShape(topEnd = 32.dp, bottomEnd = 32.dp)
 
@@ -264,9 +263,8 @@ private fun AppNavigation(vm: ChatViewModel, state: ChatUiState) {
                                 Screen.MODELS -> ModelScreen(
                                     state, content,
                                     onDownload = vm::downloadModel,
-                                    onImport = { name, hash ->
+                                    onImport = { name ->
                                         importName = name
-                                        importHash = hash
                                         importFile.launch(arrayOf("*/*"))
                                     },
                                     onActivate = vm::activateModel,
@@ -274,7 +272,7 @@ private fun AppNavigation(vm: ChatViewModel, state: ChatUiState) {
                                     onCancel = vm::cancelTransfer
                                 )
                                 Screen.SETTINGS -> SettingsScreen(
-                                    state, content, vm::configure, vm::configureAppearance, showModels
+                                    state, content, vm::configure, vm::configureAppearance, showModels, vm::notice
                                 )
                             }
                         }

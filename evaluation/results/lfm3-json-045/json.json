@@ -1,0 +1,174 @@
+{
+  "profile": "lfm3",
+  "sha256": "3793e1e6e2266919d6e015287221b41100175a98eddaba92e111aed3b05c93c4",
+  "seed": 1234,
+  "context": 2048,
+  "threads": 2,
+  "suite_sha256": "5e5258d33a5b7d0bbb145c413e3c5a5fd3dc894ad06660910fa0a15b14e22d81",
+  "system_sha256": "1ae4217c5e57c1bb89c58a6bb5c31fd74e4ef417e05aed217d66477ba18b6b08",
+  "json_object": true,
+  "passed": 5,
+  "total": 8,
+  "results": [
+    {
+      "id": "reparto-cuadernos",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "{\n  \"por_aula\": 2,\n  \"sobran\": 1\n}\n",
+      "metrics": {
+        "tokens_entrada": 145,
+        "tokens_salida": 20,
+        "total_ms": 6463,
+        "primer_fragmento_ms": 5654,
+        "decodificacion_ms": 758,
+        "pico_rss_proceso_kib": 1941860,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 25.07
+      },
+      "error": null,
+      "json_checks": {
+        "format": true,
+        "values": false
+      }
+    },
+    {
+      "id": "saldo-compra",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "{\n  \"gastado\": 54,\n  \"saldo\": 36\n}\n",
+      "metrics": {
+        "tokens_entrada": 136,
+        "tokens_salida": 19,
+        "total_ms": 4851,
+        "primer_fragmento_ms": 3837,
+        "decodificacion_ms": 962,
+        "pico_rss_proceso_kib": 1942004,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 18.71
+      },
+      "error": null,
+      "json_checks": {
+        "format": true,
+        "values": false
+      }
+    },
+    {
+      "id": "ecuacion-json",
+      "category": "matematicas",
+      "passed": true,
+      "answer": "{\n  \"x\": 7\n}\n",
+      "metrics": {
+        "tokens_entrada": 118,
+        "tokens_salida": 9,
+        "total_ms": 4307,
+        "primer_fragmento_ms": 3787,
+        "decodificacion_ms": 442,
+        "pico_rss_proceso_kib": 1941872,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 18.1
+      },
+      "error": null,
+      "json_checks": {
+        "format": true,
+        "values": true
+      }
+    },
+    {
+      "id": "recorrido-json",
+      "category": "matematicas",
+      "passed": false,
+      "answer": "{\n  \"km\": 137\n}\n",
+      "metrics": {
+        "tokens_entrada": 140,
+        "tokens_salida": 9,
+        "total_ms": 4235,
+        "primer_fragmento_ms": 3771,
+        "decodificacion_ms": 385,
+        "pico_rss_proceso_kib": 1942116,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 20.78
+      },
+      "error": null,
+      "json_checks": {
+        "format": true,
+        "values": false
+      }
+    },
+    {
+      "id": "inventario-json",
+      "category": "formato",
+      "passed": true,
+      "answer": "{\n  \"producto\": \"Lápiz\",\n  \"unidades\": 7,\n  \"disponible\": false\n}",
+      "metrics": {
+        "tokens_entrada": 126,
+        "tokens_salida": 28,
+        "total_ms": 4642,
+        "primer_fragmento_ms": 3334,
+        "decodificacion_ms": 1253,
+        "pico_rss_proceso_kib": 1928604,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 21.55
+      },
+      "error": null,
+      "json_checks": {
+        "format": true,
+        "values": true
+      }
+    },
+    {
+      "id": "entrega-json",
+      "category": "formato",
+      "passed": true,
+      "answer": "{\n  \"ciudad\": \"Arequipa\",\n  \"dia\": 12\n}",
+      "metrics": {
+        "tokens_entrada": 118,
+        "tokens_salida": 19,
+        "total_ms": 3789,
+        "primer_fragmento_ms": 3018,
+        "decodificacion_ms": 728,
+        "pico_rss_proceso_kib": 1928644,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 24.73
+      },
+      "error": null,
+      "json_checks": {
+        "format": true,
+        "values": true
+      }
+    },
+    {
+      "id": "tres-lineas",
+      "category": "formato",
+      "passed": true,
+      "answer": "SOL\nLUNA\nMAR",
+      "metrics": {
+        "tokens_entrada": 118,
+        "tokens_salida": 8,
+        "total_ms": 3456,
+        "primer_fragmento_ms": 3075,
+        "decodificacion_ms": 326,
+        "pico_rss_proceso_kib": 1928832,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 21.47
+      },
+      "error": null
+    },
+    {
+      "id": "precios-csv",
+      "category": "formato",
+      "passed": true,
+      "answer": "producto,precio\npan,2\narroz,5",
+      "metrics": {
+        "tokens_entrada": 122,
+        "tokens_salida": 14,
+        "total_ms": 3465,
+        "primer_fragmento_ms": 2956,
+        "decodificacion_ms": 473,
+        "pico_rss_proceso_kib": 1928664,
+        "codigo_motor": 0,
+        "tokens_por_segundo": 27.48
+      },
+      "error": null
+    }
+  ]
+}

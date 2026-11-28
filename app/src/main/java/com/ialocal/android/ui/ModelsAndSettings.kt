@@ -1,5 +1,9 @@
 package com.ialocal.android.ui
 
+import android.content.ClipData
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
@@ -44,6 +48,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -54,12 +59,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ialocal.android.R
@@ -67,9 +73,14 @@ import com.ialocal.android.chat.AppearanceMode
 import com.ialocal.android.chat.AppearanceSettings
 import com.ialocal.android.chat.ChatUiState
 import com.ialocal.android.inference.InferenceSettings
+import com.ialocal.android.inference.PerformanceMode
 import com.ialocal.android.model.InstalledModel
 import com.ialocal.android.model.ModelCatalog
 import com.ialocal.android.model.ModelAvailability
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -78,7 +89,7 @@ internal fun ModelScreen(
     state: ChatUiState,
     modifier: Modifier,
     onDownload: (String) -> Unit,
-    onImport: (String, String) -> Unit,
+    onImport: (String) -> Unit,
     onActivate: (String) -> Unit,
     onDelete: (InstalledModel) -> Unit,
     onCancel: () -> Unit
@@ -102,18 +113,6 @@ internal fun ModelScreen(
                 Text("Elige qué modelo usar en el teléfono.", Modifier.padding(top = 4.dp),
                     style = MaterialTheme.typography.bodyMedium, color = colors.softInk)
             }
-            items(available, key = { it.sha256 }) { model ->
-                val title = model.name.substringBefore(" · ")
-                PreferenceCard(title, "Q4_K_M · 4 bits · ${fileSize(model.bytes)}", Icons.Default.Build,
-                    tone = GlassTone.TINTED) {
-                    Text("La descarga se verifica con SHA-256.",
-                        style = MaterialTheme.typography.bodyMedium, color = colors.softInk)
-                    GlassButton({ onDownload(model.sha256) }, Modifier.fillMaxWidth(), enabled = canChange) {
-                        Text("Descargar $title")
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, null, Modifier.size(18.dp))
-                    }
-                }
-            }
             state.transfer?.let { transfer ->
                 item {
                     PreferenceCard(transfer.label, null, Icons.Default.Info) {
@@ -131,6 +130,20 @@ internal fun ModelScreen(
                         if (transfer.label != "Eliminando modelo") {
                             GlassButton(onCancel, primary = false) { Text("Cancelar transferencia") }
                         }
+                    }
+                }
+            }
+            items(available, key = { it.sha256 }) { model ->
+                val title = model.name.substringBefore(" · ")
+                val hint = if (model == ModelCatalog.recommended) {
+                    "Recomendado para empezar. Se activa al terminar la descarga."
+                } else "La descarga se verifica con SHA-256."
+                PreferenceCard(title, "Q4_K_M · ${fileSize(model.bytes)} · ${model.license}", Icons.Default.Build,
+                    tone = GlassTone.TINTED) {
+                    Text(hint, style = MaterialTheme.typography.bodyMedium, color = colors.softInk)
+                    GlassButton({ onDownload(model.sha256) }, Modifier.fillMaxWidth(), enabled = canChange) {
+                        Text("Descargar $title")
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, null, Modifier.size(18.dp))
                     }
                 }
             }
@@ -163,13 +176,13 @@ internal fun ModelScreen(
                 }
             }
             item {
-                PreferenceCard("Importar modelo", "Archivo GGUF y suma SHA-256", Icons.Default.Add) {
+                PreferenceCard("Importar modelo", "Archivo GGUF local", Icons.Default.Add) {
                     GlassButton({ importDialog = true }, Modifier.fillMaxWidth(), primary = false, enabled = canChange) {
                         Text("Importar GGUF")
                     }
                 }
             }
-            item {
+            if (ModelCatalog.candidates.isNotEmpty()) item {
                 Text("Candidatos", style = MaterialTheme.typography.titleLarge)
             }
             items(ModelCatalog.candidates, key = { it.sha256 }) { model ->
@@ -186,27 +199,20 @@ internal fun ModelScreen(
 
     if (importDialog) {
         var name by rememberSaveable { mutableStateOf("") }
-        var hash by rememberSaveable { mutableStateOf("") }
-        val valid = hash.trim().matches(Regex("[a-fA-F0-9]{64}"))
         AlertDialog(
             onDismissRequest = { importDialog = false },
-            title = { Text("Importar modelo verificado") },
+            title = { Text("Importar modelo GGUF") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Pega la suma SHA-256 publicada por quien te proporcionó el archivo.")
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Elige el archivo .gguf del modelo. Si viene en ZIP, extráelo primero.")
                     OutlinedTextField(name, { if (it.length <= 52) name = it },
                         label = { Text("Nombre (opcional)") }, singleLine = true)
-                    OutlinedTextField(
-                        hash, { if (it.trim().length <= 64) hash = it },
-                        label = { Text("SHA-256") }, singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
-                    )
                 }
             },
             dismissButton = { TextButton(onClick = { importDialog = false }) { Text("Cancelar") } },
             confirmButton = {
-                TextButton(enabled = valid, onClick = {
-                    onImport(name, hash)
+                TextButton(onClick = {
+                    onImport(name)
                     importDialog = false
                 }) { Text("Elegir archivo") }
             }
@@ -224,7 +230,8 @@ internal fun SettingsScreen(
     modifier: Modifier,
     onConfigure: (InferenceSettings) -> Unit,
     onAppearance: (AppearanceSettings) -> Unit,
-    onModels: () -> Unit
+    onModels: () -> Unit,
+    onNotice: (String) -> Unit
 ) {
     val colors = LocalGlass.current
     val settings = state.settings
@@ -232,6 +239,23 @@ internal fun SettingsScreen(
     val enabled = !state.loading && !state.generating
     var license by rememberSaveable { mutableStateOf<Int?>(null) }
     val entry = revealProgress()
+    val resolver = LocalContext.current.contentResolver
+    val saveScope = rememberCoroutineScope()
+    val saveReport = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) saveScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val stream = checkNotNull(resolver.openOutputStream(uri))
+                    stream.bufferedWriter(Charsets.UTF_8).use { it.write(state.diagnostics) }
+                }
+                onNotice("Diagnóstico guardado.")
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                onNotice("No se pudo guardar el diagnóstico.")
+            }
+        }
+    }
     Box(modifier, contentAlignment = Alignment.TopCenter) {
         LazyColumn(
             modifier = Modifier.widthIn(max = 590.dp).fillMaxSize(),
@@ -264,6 +288,11 @@ internal fun SettingsScreen(
             item {
                 PreferenceCard("Memoria y contexto", "Ajusta la carga de inferencia local.", Icons.Default.Build,
                     modifier = Modifier.glassReveal(entry, 1)) {
+                    Text("Perfil de rendimiento", style = MaterialTheme.typography.titleSmall)
+                    ChoiceStrip(PerformanceMode.entries, settings.mode, enabled, label = { it.label }) {
+                        if (it != settings.mode) onConfigure(it.defaults())
+                    }
+                    HorizontalDivider(color = colors.divider)
                     NumberPreference("Contexto · tokens", InferenceSettings.contexts, settings.contextTokens, enabled) {
                         onConfigure(settings.copy(contextTokens = it,
                             outputTokens = settings.outputTokens.coerceAtMost(it / 2)))
@@ -291,7 +320,27 @@ internal fun SettingsScreen(
                 }
             }
             item {
-                PreferenceCard("Licencias", null, Icons.Default.Info, modifier = Modifier.glassReveal(entry, 3)) {
+                PreferenceCard("Diagnóstico local", "Carga, procesamiento, generación y memoria", Icons.Default.Info,
+                    modifier = Modifier.glassReveal(entry, 3)) {
+                    if (state.diagnostics.isBlank()) {
+                        Text("Las mediciones aparecerán después de generar una respuesta.",
+                            style = MaterialTheme.typography.bodyMedium, color = colors.softInk)
+                    } else {
+                        val clipboard = LocalClipboard.current
+                        val scope = rememberCoroutineScope()
+                        GlassButton({
+                            scope.launch {
+                                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Diagnóstico", state.diagnostics)))
+                            }
+                        }, Modifier.fillMaxWidth(), primary = false) { Text("Copiar diagnóstico JSON") }
+                        GlassButton({ saveReport.launch("ia-local-diagnostico.json") }, Modifier.fillMaxWidth(), primary = false) {
+                            Text("Guardar diagnóstico JSON")
+                        }
+                    }
+                }
+            }
+            item {
+                PreferenceCard("Licencias", null, Icons.Default.Info, modifier = Modifier.glassReveal(entry, 4)) {
                     TextButton(onClick = { license = R.raw.llama_license }) { Text("llama.cpp · MIT") }
                     TextButton(onClick = { license = R.raw.qwen_license }) { Text("Qwen3.5 · Apache 2.0") }
                     TextButton(onClick = { license = R.raw.manrope_license }) { Text("Manrope · SIL OFL 1.1") }

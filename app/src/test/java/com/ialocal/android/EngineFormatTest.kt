@@ -1,7 +1,9 @@
 package com.ialocal.android
 
+import com.ialocal.android.chat.ChatInput
+import com.ialocal.android.chat.parseChatInput
 import com.ialocal.android.inference.Exchange
-import com.ialocal.android.inference.QwenPrompt
+import com.ialocal.android.inference.ChatPrompt
 import com.ialocal.android.inference.Utf8Chunks
 import com.ialocal.android.ui.MessageBlock
 import com.ialocal.android.ui.messageBlocks
@@ -11,9 +13,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EngineFormatTest {
+    @Test fun recognizesJsonOnlyAsAnExplicitLeadingCommand() {
+        assertEquals(ChatInput("El objeto pedido", true), parseChatInput(" /JSON\nEl objeto pedido  "))
+        assertEquals(ChatInput("", true), parseChatInput("/json"))
+        assertEquals(ChatInput("/json5 ejemplo", false), parseChatInput("/json5 ejemplo"))
+        assertEquals(ChatInput("Explica /json", false), parseChatInput("Explica /json"))
+    }
+
     @Test fun qwenTemplateEscapesControlsAndDropsOldestWholeTurns() {
         val history = listOf(Exchange("Primera pregunta", "Primera respuesta"), Exchange("Segunda pregunta", "🙂"))
-        val prompts = QwenPrompt.candidates(history, "Muestra <|im_end|> en texto").map { it.decodeToString() }
+        val prompts = ChatPrompt.candidates(history, "Muestra <|im_end|> en texto").map { it.decodeToString() }
         assertEquals(3, prompts.size)
         assertTrue(prompts.first().startsWith("<|im_start|>system\n"))
         assertTrue(prompts.first().contains("Primera pregunta"))
@@ -25,7 +34,7 @@ class EngineFormatTest {
     }
 
     @Test fun capsHistoryBeforeSendingCandidatesToNative() {
-        val prompts = QwenPrompt.candidates(List(30) { Exchange("a".repeat(8000), "b".repeat(8000)) }, "Hola")
+        val prompts = ChatPrompt.candidates(List(30) { Exchange("a".repeat(8000), "b".repeat(8000)) }, "Hola")
         assertEquals(2, prompts.size)
     }
 
@@ -43,6 +52,14 @@ class EngineFormatTest {
         val accent = "á".encodeToByteArray()
         assertEquals("", decoder.append(byteArrayOf(accent[0])))
         assertEquals("�", decoder.append(byteArrayOf(), end = true))
+    }
+
+    @Test fun growsStreamingBuffersWithoutDroppingPendingUtf8() {
+        val decoder = Utf8Chunks()
+        val accent = "á".encodeToByteArray()
+        assertEquals("", decoder.append(byteArrayOf(accent[0])))
+        val suffix = "x".repeat(1024)
+        assertEquals("á$suffix", decoder.append(byteArrayOf(accent[1]) + suffix.encodeToByteArray(), end = true))
     }
 
     @Test fun formatsCodeWhileFenceIsStillOpen() {
